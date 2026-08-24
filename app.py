@@ -102,7 +102,7 @@ st.markdown("---")
 tab_assign, tab_calc, tab_staff = st.tabs([
     "📋 Tab 1: Roster & Assignments", 
     "📊 Tab 2: KPI & Staff Requirement Calculator", 
-    "👥 Manage Staff Roster"
+    "👥 Add / Remove Staff Pool"
 ])
 
 # ==========================================
@@ -122,7 +122,7 @@ with tab_assign:
     col_pool, col_tasks = st.columns([1.2, 2])
     
     with col_pool:
-        st.markdown("#### 👥 Staff Pool")
+        st.markdown(f"#### 👥 Staff Pool ({len(st.session_state.staff_list)} Total)")
         for cat in ["GG", "Leading Hand", "TOTC", "Urson"]:
             members = [s["name"] for s in st.session_state.staff_list if s["category"] == cat]
             if members:
@@ -142,7 +142,7 @@ with tab_assign:
             assigned = st.multiselect(
                 f"Assign for {task}",
                 options=all_staff_names,
-                default=st.session_state.assignments.get(task, []),
+                default=[m for m in st.session_state.assignments.get(task, []) if m in all_staff_names],
                 key=f"assign_task_{task}",
                 label_visibility="collapsed"
             )
@@ -188,14 +188,15 @@ with tab_assign:
     st.code(output_text, language="text")
 
 # ==========================================
-# TAB 2: REQUIREMENT CALCULATOR
+# TAB 2: REQUIREMENT CALCULATOR & KPI EDIT
 # ==========================================
 with tab_calc:
-    st.subheader("📊 Staff Requirement Breakdown (Average KPI vs. Target KPI)")
+    st.subheader("📊 Staff Requirement Breakdown & KPI Customizer")
     st.markdown(f"Calculated based on **{total_rows} rows**, **{plants_per_row} plants/row** (**{total_plants:,} total plants**), **{hours_per_day} hrs/day**, and a target of **{target_days} days**.")
+    st.markdown("You can directly edit the **Average KPI** and **Target KPI** values for each task below:")
     st.markdown("---")
     
-    col_h1, col_h2, col_h3, col_h4, col_h5 = st.columns([1.5, 1, 1, 1, 1])
+    col_h1, col_h2, col_h3, col_h4, col_h5 = st.columns([1.5, 1, 1.2, 1.2, 1])
     col_h1.markdown("**Task Name**")
     col_h2.markdown("**Frequency**")
     col_h3.markdown("**Avg KPI / Req Staff**")
@@ -203,50 +204,89 @@ with tab_calc:
     col_h5.markdown("**Difference**")
     st.markdown("---")
 
+    total_avg_staff_req = 0
+    total_target_staff_req = 0
+
     for task, cfg in st.session_state.task_config.items():
-        c1, c2, c3, c4, c5 = st.columns([1.5, 1, 1, 1, 1])
+        c1, c2, c3, c4, c5 = st.columns([1.5, 1, 1.2, 1.2, 1])
         c1.markdown(f"**{task}**")
         freq = cfg["freq"]
         c2.markdown(f"{freq}x / week" if freq > 1 else "1x / week")
         
         total_task_plants = total_plants * freq
         
-        avg_kpi = cfg["avg_kpi"]
-        avg_daily_output = avg_kpi * hours_per_day
-        avg_req_staff = math.ceil((total_task_plants / avg_daily_output) / target_days) if avg_daily_output > 0 else 0
-        c3.markdown(f"**{avg_req_staff} staff**<br><small style='color:gray;'>({avg_kpi}/hr)</small>", unsafe_allow_html=True)
+        # Editable KPIs
+        new_avg_kpi = c3.number_input(f"Avg KPI {task}", min_value=1, value=int(cfg["avg_kpi"]), step=10, key=f"edit_avg_{task}", label_visibility="collapsed")
+        st.session_state.task_config[task]["avg_kpi"] = new_avg_kpi
         
-        target_kpi = cfg["target_kpi"]
-        target_daily_output = target_kpi * hours_per_day
+        new_target_kpi = c4.number_input(f"Target KPI {task}", min_value=1, value=int(cfg["target_kpi"]), step=10, key=f"edit_target_{task}", label_visibility="collapsed")
+        st.session_state.task_config[task]["target_kpi"] = new_target_kpi
+        
+        # Calculations
+        avg_daily_output = new_avg_kpi * hours_per_day
+        avg_req_staff = math.ceil((total_task_plants / avg_daily_output) / target_days) if avg_daily_output > 0 else 0
+        total_avg_staff_req += avg_req_staff
+        
+        target_daily_output = new_target_kpi * hours_per_day
         target_req_staff = math.ceil((total_task_plants / target_daily_output) / target_days) if target_daily_output > 0 else 0
-        c4.markdown(f"**{target_req_staff} staff**<br><small style='color:gray;'>({target_kpi}/hr)</small>", unsafe_allow_html=True)
+        target_req_staff = max(1, target_req_staff) # floor at 1 if valid
+        total_target_staff_req += target_req_staff
+        
+        c3.markdown(f"<small>Req: **{avg_req_staff} staff**</small>", unsafe_allow_html=True)
+        c4.markdown(f"<small>Req: **{target_req_staff} staff**</small>", unsafe_allow_html=True)
         
         diff = avg_req_staff - target_req_staff
         if diff > 0:
-            c5.markdown(f"<span style='color: orange;'>+{diff} staff needed (Avg)</span>", unsafe_allow_html=True)
+            c5.markdown(f"<span style='color: orange;'>+{diff} staff</span>", unsafe_allow_html=True)
         elif diff < 0:
-            c5.markdown(f"<span style='color: green;'>{diff} staff (Target met)</span>", unsafe_allow_html=True)
+            c5.markdown(f"<span style='color: green;'>{diff} staff</span>", unsafe_allow_html=True)
         else:
-            c5.markdown("`Exact Match`", unsafe_allow_html=True)
+            c5.markdown("`Match`", unsafe_allow_html=True)
             
         st.markdown("---")
 
+    # Summary Totals Footer
+    st.markdown("### 📈 Summary Total Requirements")
+    col_sum1, col_sum2, col_sum3 = st.columns(3)
+    col_sum1.metric("Total Staff Required (Avg KPI)", f"{total_avg_staff_req} staff")
+    col_sum2.metric("Total Staff Required (Target KPI)", f"{total_target_staff_req} staff")
+    col_sum3.metric("Total Available Staff Pool", f"{len(st.session_state.staff_list)} members")
+
+
 # ==========================================
-# TAB 3: MANAGE STAFF
+# TAB 3: ADD / REMOVE STAFF POOL
 # ==========================================
 with tab_staff:
-    st.subheader("Manage Team Roster")
-    with st.form("add_staff_form_new", clear_on_submit=True):
-        c_n, c_c, c_b = st.columns([2, 2, 1])
-        new_name = c_n.text_input("Staff Name")
-        new_cat = c_c.selectbox("Category", ["GG", "Leading Hand", "TOTC", "Urson"])
-        submitted = c_b.form_submit_button("➕ Add")
-        
-        if submitted and new_name.strip():
-            st.session_state.staff_list.append({"name": new_name.strip(), "category": new_cat})
-            st.success(f"Added {new_name.strip()}!")
-            st.rerun()
+    st.subheader("👥 Add New Starters or Remove Staff (Quits/Departures)")
+    
+    col_add, col_remove = st.columns(2)
+    
+    with col_add:
+        st.markdown("#### ➕ Add New Starter")
+        with st.form("add_staff_form_direct", clear_on_submit=True):
+            new_name = st.text_input("Staff Name")
+            new_cat = st.selectbox("Category", ["GG", "Leading Hand", "TOTC", "Urson"])
+            submitted = st.form_submit_button("Add Member to Pool")
+            
+            if submitted and new_name.strip():
+                st.session_state.staff_list.append({"name": new_name.strip(), "category": new_cat})
+                st.success(f"Successfully added {new_name.strip()}!")
+                st.rerun()
 
-    st.markdown("#### Current Roster Overview")
+    with col_remove:
+        st.markdown("#### ❌ Remove Staff Member")
+        all_current_names = [s["name"] for s in st.session_state.staff_list]
+        staff_to_remove = st.selectbox("Select staff member who left:", options=[""] + all_current_names)
+        
+        if st.button("Remove Selected Staff", type="primary"):
+            if staff_to_remove:
+                st.session_state.staff_list = [s for s in st.session_state.staff_list if s["name"] != staff_to_remove]
+                st.success(f"Removed {staff_to_remove} from the pool.")
+                st.rerun()
+            else:
+                st.warning("Please select a staff member first.")
+
+    st.markdown("---")
+    st.markdown("#### Current Active Pool Overview")
     df_roster = pd.DataFrame(st.session_state.staff_list)
     st.dataframe(df_roster, use_container_width=True, hide_index=True)
