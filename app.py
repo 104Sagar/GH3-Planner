@@ -7,7 +7,7 @@ from datetime import date
 
 st.set_page_config(page_title="GH Labor Planner", layout="wide")
 
-# --- COMPACT CSS STYLING ---
+# --- COMPACT CSS & STYLING FOR SIDE-BY-SIDE TAPPABLE ROWS ---
 st.markdown("""
     <style>
         .block-container {
@@ -483,7 +483,7 @@ with tab_map:
     available_tasks_list = list(st.session_state.task_config.keys())
     selected_track_task = st.selectbox("Select Task to Track & Color-Code:", options=available_tasks_list, key="map_task_selector")
     
-    st.markdown("<small>💡 <i>Select status per row: <b>Unfilled (Grey)</b> | <b>Half Finished (Yellow)</b> | <b>Finished (Green)</b></i></small>", unsafe_allow_html=True)
+    st.markdown("<small>💡 <i>Tap once for <b>Half Yellow</b>, twice for <b>Full Green</b>, third tap to reset.</i></small>", unsafe_allow_html=True)
     st.markdown("---")
     
     if selected_track_task not in st.session_state.map_progress:
@@ -492,66 +492,59 @@ with tab_map:
     north_rows = list(range(3001, 3260, 2))
     south_rows = list(range(3002, 3261, 2))
     
-    status_options = ["Unfilled", "Half Finished", "Finished"]
-
-    # Use standard 2 columns. To ensure iPhone displays them side-by-side cleanly, 
-    # we render compact selectboxes paired with color chips.
+    # Use standard 2 columns side-by-side
     col_north, col_south = st.columns(2)
     
-    map_changed = False
+    map_updated = False
 
     with col_north:
         st.markdown("##### ⬆️ North Side")
         for r in north_rows:
             r_str = str(r)
-            current_val = st.session_state.map_progress[selected_track_task].get(r_str, "Unfilled")
-            idx = status_options.index(current_val) if current_val in status_options else 0
+            status = st.session_state.map_progress[selected_track_task].get(r_str, "Unfilled")
             
-            # Color indicator prefix
-            prefix = "⚪"
-            if current_val == "Finished":
-                prefix = "🟢"
-            elif current_val == "Half Finished":
-                prefix = "🟡"
-
-            new_val = st.selectbox(
-                f"{prefix} Row {r}", 
-                options=status_options, 
-                index=idx, 
-                key=f"sel_n_{selected_track_task}_{r}",
-                label_visibility="visible"
-            )
-            
-            if new_val != current_val:
-                st.session_state.map_progress[selected_track_task][r_str] = new_val
-                map_changed = True
+            # Button color styling
+            if status == "Finished":
+                label = f"🟢 Row {r}"
+            elif status == "Half Finished":
+                label = f"🟡 Row {r}"
+            else:
+                label = f"⚪ Row {r}"
+                
+            if st.button(label, key=f"row_tap_n_{selected_track_task}_{r}"):
+                if status == "Unfilled":
+                    new_status = "Half Finished"
+                elif status == "Half Finished":
+                    new_status = "Finished"
+                else:
+                    new_status = "Unfilled"
+                st.session_state.map_progress[selected_track_task][r_str] = new_status
+                map_updated = True
 
     with col_south:
         st.markdown("##### ⬇️ South Side")
         for r in south_rows:
             r_str = str(r)
-            current_val = st.session_state.map_progress[selected_track_task].get(r_str, "Unfilled")
-            idx = status_options.index(current_val) if current_val in status_options else 0
+            status = st.session_state.map_progress[selected_track_task].get(r_str, "Unfilled")
             
-            prefix = "⚪"
-            if current_val == "Finished":
-                prefix = "🟢"
-            elif current_val == "Half Finished":
-                prefix = "🟡"
+            if status == "Finished":
+                label = f"🟢 Row {r}"
+            elif status == "Half Finished":
+                label = f"🟡 Row {r}"
+            else:
+                label = f"⚪ Row {r}"
+                
+            if st.button(label, key=f"row_tap_s_{selected_track_task}_{r}"):
+                if status == "Unfilled":
+                    new_status = "Half Finished"
+                elif status == "Half Finished":
+                    new_status = "Finished"
+                else:
+                    new_status = "Unfilled"
+                st.session_state.map_progress[selected_track_task][r_str] = new_status
+                map_updated = True
 
-            new_val = st.selectbox(
-                f"{prefix} Row {r}", 
-                options=status_options, 
-                index=idx, 
-                key=f"sel_s_{selected_track_task}_{r}",
-                label_visibility="visible"
-            )
-            
-            if new_val != current_val:
-                st.session_state.map_progress[selected_track_task][r_str] = new_val
-                map_changed = True
-
-    if map_changed:
+    if map_updated:
         save_data(MAP_FILE, st.session_state.map_progress)
         st.rerun()
 
