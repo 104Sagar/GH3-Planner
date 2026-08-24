@@ -7,6 +7,28 @@ from datetime import date
 
 st.set_page_config(page_title="GH3 Roster & Allocation Planner", layout="wide")
 
+# --- COMPACT CSS STYLING ---
+st.markdown("""
+    <style>
+        .block-container {
+            padding-top: 1.5rem;
+            padding-bottom: 1rem;
+            padding-left: 1rem;
+            padding-right: 1rem;
+        }
+        hr {
+            margin-top: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+        .stMultiSelect {
+            margin-bottom: -1rem;
+        }
+        h1, h2, h3 {
+            margin-bottom: 0.3rem;
+        }
+    </style>
+""", unsafe_allow_html=True)
+
 STAFF_FILE = "staff_data.json"
 TASK_FILE = "task_data.json"
 ASSIGNMENT_FILE = "assignment_data.json"
@@ -77,7 +99,7 @@ def get_badge_html(name, cat):
         "Leading Hand": "background: #4a3d00; color: #fff59d; border: 1px solid #fbc02d;"
     }
     s = styles.get(cat, "background: #333; color: #fff;")
-    return f"<span style='{s} padding: 2px 6px; border-radius: 8px; font-size: 0.8rem; font-weight: 600; display: inline-block; margin: 2px;'>{name}</span>"
+    return f"<span style='{s} padding: 1px 4px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; display: inline-block; margin: 1px;'>{name}</span>"
 
 st.title("🌿 GH3 Labor Planner")
 
