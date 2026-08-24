@@ -179,7 +179,7 @@ with tab_assign:
     st.code(list1_text, language="text")
 
     # --- COPY PASTE LIST 2: GROUPED BY TASK ---
-    st.markdown("### 📱 Copy-Paste List 2: Grouped by Task")
+    st.markdown("### 📱 Copy-Paste List 2: Grouped by Task (All Staff)")
     list2_text = f"GH3 ROSTER - BY TASK ({gp['week_date'].strftime('%d %b %Y')})\n\n"
     for task in active_tasks:
         assigned_members = st.session_state.assignments.get(task, [])
@@ -190,6 +190,28 @@ with tab_assign:
                 list2_text += f"{idx}. {name} ({cat})\n"
             list2_text += "\n"
     st.code(list2_text, language="text")
+
+    # --- COPY PASTE LIST 3: URSON STAFF ONLY BY TASK ---
+    st.markdown("### 📱 Copy-Paste List 3: Urson Staff Only (By Task)")
+    list3_text = f"GH3 ROSTER - URSON ONLY ({gp['week_date'].strftime('%d %b %Y')})\n\n"
+    urson_has_assignments = False
+    for task in active_tasks:
+        assigned_members = st.session_state.assignments.get(task, [])
+        urson_members = [
+            m for m in assigned_members 
+            if next((s["category"] for s in st.session_state.staff_list if s["name"] == m), "") == "Urson"
+        ]
+        if urson_members:
+            urson_has_assignments = True
+            list3_text += f"*{task.upper()}*\n"
+            for idx, name in enumerate(urson_members, 1):
+                list3_text += f"{idx}. {name} (Urson)\n"
+            list3_text += "\n"
+    
+    if not urson_has_assignments:
+        list3_text += "No Urson staff assigned to tasks yet.\n"
+        
+    st.code(list3_text, language="text")
 
 # ==========================================
 # TAB 2: CALCULATOR, SETTINGS & TASK BUILDER
