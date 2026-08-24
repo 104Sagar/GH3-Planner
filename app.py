@@ -8,6 +8,7 @@ from datetime import date
 st.set_page_config(page_title="GH3 Roster & Allocation Planner", layout="wide")
 
 STAFF_FILE = "staff_data.json"
+TASK_FILE = "task_data.json"
 
 DEFAULT_STAFF = [
     {"name": "Marie", "category": "GG"}, {"name": "Kid", "category": "GG"}, {"name": "Ting", "category": "GG"}, {"name": "Tommy", "category": "GG"}, {"name": "Risa", "category": "GG"},
@@ -16,39 +17,41 @@ DEFAULT_STAFF = [
     {"name": "Nikki", "category": "Urson"}, {"name": "Bina", "category": "Urson"}, {"name": "Tiara", "category": "Urson"}, {"name": "Shisir", "category": "Urson"}, {"name": "Jimmy", "category": "Urson"}, {"name": "Chandra", "category": "Urson"}, {"name": "Malick", "category": "Urson"}, {"name": "Audrey", "category": "Urson"}, {"name": "Han", "category": "Urson"}, {"name": "Rosie", "category": "Urson"}, {"name": "Dhia", "category": "Urson"}, {"name": "Hui", "category": "Urson"}, {"name": "Erica", "category": "Urson"}, {"name": "Lin", "category": "Urson"}, {"name": "Moka", "category": "Urson"}, {"name": "Panyawat", "category": "Urson"}, {"name": "AkashDeep", "category": "Urson"}, {"name": "Zakia", "category": "Urson"}, {"name": "Supakit", "category": "Urson"}, {"name": "Camie", "category": "Urson"}, {"name": "Fierda", "category": "Urson"}, {"name": "Luoyan liu", "category": "Urson"}, {"name": "Fikki", "category": "Urson"},
 ]
 
-def load_staff():
-    if os.path.exists(STAFF_FILE):
+DEFAULT_TASKS = {
+    "Clip/Shoot": {"target_kpi": 674, "avg_kpi": 400, "freq": 1, "active": True, "is_manual": False, "deletable": False},
+    "Pollination": {"target_kpi": 2500, "avg_kpi": 2250, "freq": 3, "active": True, "is_manual": False, "deletable": False},
+    "De-leafing": {"target_kpi": 800, "avg_kpi": 750, "freq": 1, "active": True, "is_manual": False, "deletable": False},
+    "Truss Support": {"target_kpi": 1200, "avg_kpi": 550, "freq": 1, "active": True, "is_manual": False, "deletable": False},
+    "Pruning": {"target_kpi": 1200, "avg_kpi": 900, "freq": 1, "active": True, "is_manual": False, "deletable": False},
+    "Lowering": {"target_kpi": 1333, "avg_kpi": 1400, "freq": 1, "active": True, "is_manual": False, "deletable": False},
+    "Others": {"target_kpi": 0, "avg_kpi": 0, "freq": 1, "active": True, "is_manual": True, "manual_req": 2, "deletable": False},
+}
+
+def load_data(filename, default_val):
+    if os.path.exists(filename):
         try:
-            with open(STAFF_FILE, "r") as f:
+            with open(filename, "r") as f:
                 return json.load(f)
         except:
-            return DEFAULT_STAFF
-    return DEFAULT_STAFF
+            return default_val
+    return default_val
 
-def save_staff(staff_list):
-    with open(STAFF_FILE, "w") as f:
-        json.dump(staff_list, f)
+def save_data(filename, data):
+    with open(filename, "w") as f:
+        json.dump(data, f)
 
 if "staff_list" not in st.session_state:
-    st.session_state.staff_list = load_staff()
+    st.session_state.staff_list = load_data(STAFF_FILE, DEFAULT_STAFF)
 
 if "task_config" not in st.session_state:
-    st.session_state.task_config = {
-        "Clip/Shoot": {"target_kpi": 674, "avg_kpi": 400, "freq": 1, "active": True, "is_manual": False, "deletable": False},
-        "Pollination": {"target_kpi": 2500, "avg_kpi": 2250, "freq": 3, "active": True, "is_manual": False, "deletable": False},
-        "De-leafing": {"target_kpi": 800, "avg_kpi": 750, "freq": 1, "active": True, "is_manual": False, "deletable": False},
-        "Truss Support": {"target_kpi": 1200, "avg_kpi": 550, "freq": 1, "active": True, "is_manual": False, "deletable": False},
-        "Pruning": {"target_kpi": 1200, "avg_kpi": 900, "freq": 1, "active": True, "is_manual": False, "deletable": False},
-        "Lowering": {"target_kpi": 1333, "avg_kpi": 1400, "freq": 1, "active": True, "is_manual": False, "deletable": False},
-        "Others": {"target_kpi": 0, "avg_kpi": 0, "freq": 1, "active": True, "is_manual": True, "manual_req": 2, "deletable": False},
-    }
+    st.session_state.task_config = load_data(TASK_FILE, DEFAULT_TASKS)
 
 if "assignments" not in st.session_state:
     st.session_state.assignments = {task: [] for task in st.session_state.task_config.keys()}
 
 if "global_params" not in st.session_state:
     st.session_state.global_params = {
-        "week_date": date.today(),
+        "week_date": date.today().isoformat(),
         "total_rows": 260,
         "plants_per_row": 480,
         "target_days": 5.0,
@@ -92,6 +95,11 @@ def sort_tasks(task_dict):
 
 st.session_state.task_config = sort_tasks(st.session_state.task_config)
 active_tasks = {task: cfg for task, cfg in st.session_state.task_config.items() if cfg.get("active", True)}
+
+# Ensure assignments dictionary includes all tasks
+for t in st.session_state.task_config:
+    if t not in st.session_state.assignments:
+        st.session_state.assignments[t] = []
 
 # ==========================================
 # TAB 1: ROSTER & ASSIGNMENTS
@@ -157,7 +165,7 @@ with tab_assign:
                 st.markdown(f"<small style='color: #ff6b6b;'>❌ Need {abs(diff)} more</small>", unsafe_allow_html=True)
             st.markdown("---")
 
-    # --- COPY PASTE LIST 1: GROUPED BY CATEGORY ---
+    # --- COPY PASTE LIST 1 ---
     st.markdown("### 📱 Copy-Paste List 1: Grouped by Category")
     cat_map = {"GG": [], "Leading Hand": [], "TOTC": [], "Urson": []}
     for task, assigned_members in st.session_state.assignments.items():
@@ -168,7 +176,7 @@ with tab_assign:
                     cat_map[cat] = []
                 cat_map[cat].append(name)
 
-    list1_text = f"GH3 ROSTER - BY CATEGORY ({gp['week_date'].strftime('%d %b %Y')})\n\n"
+    list1_text = f"GH3 ROSTER - BY CATEGORY ({gp['week_date']})\n\n"
     for cat in ["GG", "Leading Hand", "TOTC", "Urson"]:
         members = cat_map[cat]
         if members:
@@ -178,9 +186,9 @@ with tab_assign:
             list1_text += "\n"
     st.code(list1_text, language="text")
 
-    # --- COPY PASTE LIST 2: GROUPED BY TASK ---
+    # --- COPY PASTE LIST 2 ---
     st.markdown("### 📱 Copy-Paste List 2: Grouped by Task (All Staff)")
-    list2_text = f"GH3 ROSTER - BY TASK ({gp['week_date'].strftime('%d %b %Y')})\n\n"
+    list2_text = f"GH3 ROSTER - BY TASK ({gp['week_date']})\n\n"
     for task in active_tasks:
         assigned_members = st.session_state.assignments.get(task, [])
         if assigned_members:
@@ -191,9 +199,9 @@ with tab_assign:
             list2_text += "\n"
     st.code(list2_text, language="text")
 
-    # --- COPY PASTE LIST 3: URSON STAFF ONLY BY TASK ---
+    # --- COPY PASTE LIST 3 ---
     st.markdown("### 📱 Copy-Paste List 3: Urson Staff Only (By Task)")
-    list3_text = f"GH3 ROSTER - URSON ONLY ({gp['week_date'].strftime('%d %b %Y')})\n\n"
+    list3_text = f"GH3 ROSTER - URSON ONLY ({gp['week_date']})\n\n"
     urson_has_assignments = False
     for task in active_tasks:
         assigned_members = st.session_state.assignments.get(task, [])
@@ -220,7 +228,10 @@ with tab_calc:
     st.subheader("⚙️ Greenhouse Settings")
     
     c_set1, c_set2, c_set3, c_set4, c_set5 = st.columns(5)
-    gp["week_date"] = c_set1.date_input("Week:", value=gp["week_date"])
+    parsed_date = date.fromisoformat(gp["week_date"]) if isinstance(gp["week_date"], str) else gp["week_date"]
+    new_week_date = c_set1.date_input("Week:", value=parsed_date)
+    gp["week_date"] = new_week_date.isoformat()
+    
     gp["total_rows"] = c_set2.number_input("Rows", min_value=1, value=gp["total_rows"])
     gp["plants_per_row"] = c_set3.number_input("Pl/Row", min_value=1, value=gp["plants_per_row"])
     gp["target_days"] = c_set4.number_input("Days", min_value=1.0, value=gp["target_days"], step=0.5)
@@ -231,16 +242,22 @@ with tab_calc:
     
     total_avg_staff_req = 0
     total_target_staff_req = 0
+    config_changed = False
 
     for task, cfg in list(st.session_state.task_config.items()):
         col_t1, col_t2, col_t3 = st.columns([1.2, 1, 1])
         
         is_active = col_t1.checkbox(f"{task}", value=cfg.get("active", True), key=f"active_{task}")
-        st.session_state.task_config[task]["active"] = is_active
+        if cfg.get("active") != is_active:
+            st.session_state.task_config[task]["active"] = is_active
+            config_changed = True
         
         if cfg.get("is_manual", False):
             manual_req = col_t2.number_input(f"Manual Req {task}", min_value=0, value=int(cfg.get("manual_req", 2)), key=f"manual_req_{task}")
-            st.session_state.task_config[task]["manual_req"] = manual_req
+            if cfg.get("manual_req") != manual_req:
+                st.session_state.task_config[task]["manual_req"] = manual_req
+                config_changed = True
+                
             col_t3.markdown("<small style='color:gray;'>Manual Input</small>", unsafe_allow_html=True)
             
             if is_active:
@@ -252,10 +269,14 @@ with tab_calc:
             total_task_plants = total_plants * freq
             
             new_avg_kpi = col_t2.number_input(f"Avg KPI {task}", min_value=1, value=int(cfg["avg_kpi"]), step=10, key=f"edit_avg_{task}")
-            st.session_state.task_config[task]["avg_kpi"] = new_avg_kpi
-            
+            if cfg.get("avg_kpi") != new_avg_kpi:
+                st.session_state.task_config[task]["avg_kpi"] = new_avg_kpi
+                config_changed = True
+                
             new_target_kpi = col_t3.number_input(f"Target KPI {task}", min_value=1, value=int(cfg["target_kpi"]), step=10, key=f"edit_target_{task}")
-            st.session_state.task_config[task]["target_kpi"] = new_target_kpi
+            if cfg.get("target_kpi") != new_target_kpi:
+                st.session_state.task_config[task]["target_kpi"] = new_target_kpi
+                config_changed = True
             
             if is_active:
                 avg_daily_output = new_avg_kpi * gp["hours_per_day"]
@@ -273,7 +294,9 @@ with tab_calc:
                 
         st.markdown("---")
 
-    # Expander to Add or Delete Tasks
+    if config_changed:
+        save_data(TASK_FILE, st.session_state.task_config)
+
     col_exp1, col_exp2 = st.columns(2)
     with col_exp1:
         with st.expander("➕ Add New Task"):
@@ -290,6 +313,7 @@ with tab_calc:
                             "target_kpi": 1000, "avg_kpi": 800, "freq": new_task_freq, 
                             "active": True, "is_manual": is_man, "manual_req": 2, "deletable": True
                         }
+                        save_data(TASK_FILE, st.session_state.task_config)
                         if new_task_name.strip() not in st.session_state.assignments:
                             st.session_state.assignments[new_task_name.strip()] = []
                         st.success(f"Added task {new_task_name.strip()}!")
@@ -299,12 +323,12 @@ with tab_calc:
 
     with col_exp2:
         with st.expander("❌ Delete Custom Task"):
-            # Only allow deleting custom tasks (not the default built-in ones)
             deletable_tasks = [t for t, cfg in st.session_state.task_config.items() if cfg.get("deletable", True)]
             task_to_delete = st.selectbox("Select task to delete:", options=[""] + deletable_tasks)
             if st.button("Delete Task", type="primary"):
                 if task_to_delete:
                     del st.session_state.task_config[task_to_delete]
+                    save_data(TASK_FILE, st.session_state.task_config)
                     if task_to_delete in st.session_state.assignments:
                         del st.session_state.assignments[task_to_delete]
                     st.success(f"Deleted task '{task_to_delete}'.")
