@@ -538,11 +538,15 @@ with tab_map:
         st.rerun()
 
     st.markdown("---")
-    if st.button("🔄 Reset All Map Progress", type="primary"):
-        st.session_state.map_progress = {}
-        if os.path.exists(MAP_FILE):
-            os.remove(MAP_FILE)
-        st.success("Map progress reset successfully!")
-        st.rerun()
+    
+    # Task-specific reset button instead of wiping all tasks
+    if st.button(f"🔄 Reset Progress for '{selected_track_task}'", type="primary"):
+        if selected_track_task in st.session_state.map_progress:
+            st.session_state.map_progress[selected_track_task] = {}
+            save_data(MAP_FILE, st.session_state.map_progress)
+            st.success(f"Progress reset successfully for {selected_track_task}!")
+            st.rerun()
+        else:
+            st.info("No progress recorded for this task yet.")
 
     st.markdown('<div class="footer-watermark">Developed by Sagar</div>', unsafe_allow_html=True)
