@@ -7,33 +7,45 @@ from datetime import date
 
 st.set_page_config(page_title="GH Labor Planner", layout="wide")
 
-# --- COMPACT CSS STYLING ---
+# --- ULTRA-COMPACT CSS STYLING ---
 st.markdown("""
     <style>
         .block-container {
-            padding-top: 1.5rem;
-            padding-bottom: 1rem;
-            padding-left: 1rem;
-            padding-right: 1rem;
+            padding-top: 0.8rem;
+            padding-bottom: 0.5rem;
+            padding-left: 0.8rem;
+            padding-right: 0.8rem;
         }
         hr {
-            margin-top: 0.5rem;
-            margin-bottom: 0.5rem;
+            margin-top: 0.3rem;
+            margin-bottom: 0.3rem;
         }
         .stMultiSelect {
-            margin-bottom: -1rem;
+            margin-bottom: -1.2rem;
         }
-        h1, h2, h3 {
-            margin-bottom: 0.3rem;
+        h1 {
+            font-size: 1.6rem !important;
+            margin-bottom: 0.2rem !important;
+        }
+        h2, h3 {
+            font-size: 1.1rem !important;
+            margin-top: 0.2rem !important;
+            margin-bottom: 0.2rem !important;
+        }
+        p, label, span, div {
+            font-size: 0.85rem !important;
+        }
+        .stNumberInput, .stDateInput {
+            margin-bottom: -0.5rem;
         }
         .footer-watermark {
             text-align: center;
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             color: #888888;
-            margin-top: 2rem;
-            margin-bottom: 1rem;
+            margin-top: 1rem;
+            margin-bottom: 0.5rem;
             border-top: 1px solid #333;
-            padding-top: 0.5rem;
+            padding-top: 0.3rem;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -111,7 +123,7 @@ def get_badge_html(name, cat):
         "Leading Hand": "background: #4a3d00; color: #fff59d; border: 1px solid #fbc02d;"
     }
     s = styles.get(cat, "background: #333; color: #fff;")
-    return f"<span style='{s} padding: 1px 4px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; display: inline-block; margin: 1px;'>{name}</span>"
+    return f"<span style='{s} padding: 1px 3px; border-radius: 4px; font-size: 0.7rem; font-weight: 600; display: inline-block; margin: 1px;'>{name}</span>"
 
 st.title("🌿 GH Labor Planner")
 
