@@ -56,12 +56,12 @@ if "staff_list" not in st.session_state:
 
 if "task_config" not in st.session_state:
     st.session_state.task_config = {
-        "Clip/Shoot": {"target_kpi": 674, "avg_kpi": 400, "freq": 1},
-        "De-leafing": {"target_kpi": 800, "avg_kpi": 750, "freq": 1},
-        "Pollination": {"target_kpi": 2500, "avg_kpi": 2250, "freq": 3},
-        "Truss Support": {"target_kpi": 1200, "avg_kpi": 550, "freq": 1},
-        "Pruning": {"target_kpi": 1200, "avg_kpi": 900, "freq": 1},
-        "Lowering": {"target_kpi": 1333, "avg_kpi": 1400, "freq": 1},
+        "Clip/Shoot": {"target_kpi": 674, "avg_kpi": 400, "freq": 1, "active": True},
+        "De-leafing": {"target_kpi": 800, "avg_kpi": 750, "freq": 1, "active": True},
+        "Pollination": {"target_kpi": 2500, "avg_kpi": 2250, "freq": 3, "active": True},
+        "Truss Support": {"target_kpi": 1200, "avg_kpi": 550, "freq": 1, "active": True},
+        "Pruning": {"target_kpi": 1200, "avg_kpi": 900, "freq": 1, "active": True},
+        "Lowering": {"target_kpi": 1333, "avg_kpi": 1400, "freq": 1, "active": True},
     }
 
 if "assignments" not in st.session_state:
@@ -105,6 +105,9 @@ tab_assign, tab_calc, tab_staff = st.tabs([
     "👥 Add / Remove Staff Pool"
 ])
 
+# Filter only active tasks for the week
+active_tasks = {task: cfg for task, cfg in st.session_state.task_config.items() if cfg.get("active", True)}
+
 # ==========================================
 # TAB 1: ROSTER & ASSIGNMENTS (ANTI-DOUBLE BOOKING)
 # ==========================================
@@ -112,7 +115,7 @@ with tab_assign:
     st.subheader("Interactive Assignment & Copy-Paste Roster")
     
     task_requirements_display = {}
-    for task, cfg in st.session_state.task_config.items():
+    for task, cfg in active_tasks.items():
         total_task_plants = total_plants * cfg["freq"]
         daily_output_per_person = cfg["avg_kpi"] * hours_per_day
         total_man_days = total_task_plants / daily_output_per_person if daily_output_per_person > 0 else 0
@@ -132,18 +135,20 @@ with tab_assign:
                 st.markdown("")
 
     with col_tasks:
-        st.markdown("#### 📝 Task Assignments")
+        st.markdown("#### 📝 Task Assignments (Active Tasks Only)")
+        if not active_tasks:
+            st.info("All tasks are currently unchecked in Tab 2. Check at least one task to assign staff.")
+        
         all_staff_names = [s["name"] for s in st.session_state.staff_list]
         
-        # Track already assigned staff across other tasks to prevent double booking
         current_assigned_flat = []
         for t, assigned_list in st.session_state.assignments.items():
-            current_assigned_flat.extend(assigned_list)
+            if t in active_tasks:
+                current_assigned_flat.extend(assigned_list)
 
         for task, req_cnt in task_requirements_display.items():
             st.markdown(f"**{task}** — <span style='color: #2D6A4F; font-weight: 600;'>Required: {req_cnt} staff</span>", unsafe_allow_html=True)
             
-            # Available options for this specific task exclude people already assigned to OTHER tasks
             currently_selected = [m for m in st.session_state.assignments.get(task, []) if m in all_staff_names]
             other_assigned = [m for m in current_assigned_flat if m not in currently_selected]
             available_options = [m for m in all_staff_names if m not in other_assigned]
@@ -157,10 +162,10 @@ with tab_assign:
             )
             st.session_state.assignments[task] = assigned
             
-            # Refresh flat list for next iteration
             current_assigned_flat = []
             for t, assigned_list in st.session_state.assignments.items():
-                current_assigned_flat.extend(assigned_list)
+                if t in active_tasks:
+                    current_assigned_flat.extend(assigned_list)
             
             diff = len(assigned) - req_cnt
             if diff == 0:
@@ -176,11 +181,12 @@ with tab_assign:
     
     category_map = {"GG": [], "Leading Hand": [], "TOTC": [], "Urson": []}
     for task, assigned_members in st.session_state.assignments.items():
-        for name in assigned_members:
-            cat = next((s["category"] for s in st.session_state.staff_list if s["name"] == name), "Other")
-            if cat not in category_map:
-                category_map[cat] = []
-            category_map[cat].append({"name": name, "task": task})
+        if task in active_tasks:
+            for name in assigned_members:
+                cat = next((s["category"] for s in st.session_state.staff_list if s["name"] == name), "Other")
+                if cat not in category_map:
+                    category_map[cat] = []
+                category_map[cat].append({"name": name, "task": task})
 
     output_text = f"GH3 - WEEKLY LABOR ROSTER ({week_date.strftime('%d %b %Y')})\n"
     output_text += f"Parameters: {total_rows} rows | {plants_per_row} plants/row | Target: {target_days} days ({hours_per_day} hrs/day)\n"
@@ -197,18 +203,20 @@ with tab_assign:
     st.code(output_text, language="text")
 
 # ==========================================
-# TAB 2: REQUIREMENT CALCULATOR & KPI EDIT
+# TAB 2: REQUIREMENT CALCULATOR & TASK TOGGLES
 # ==========================================
 with tab_calc:
-    st.subheader("📊 Staff Requirement Breakdown & KPI Customizer")
+    st.subheader("📊 Staff Requirement Breakdown & Weekly Task Selector")
     st.markdown(f"Calculated based on **{total_rows} rows**, **{plants_per_row} plants/row** (**{total_plants:,} total plants**), **{hours_per_day} hrs/day**, and a target of **{target_days} days**.")
+    st.markdown("Check or uncheck tasks below depending on whether you are running them this week:")
     st.markdown("---")
     
-    col_h1, col_h2, col_h3, col_h4, col_h5 = st.columns([1.5, 1, 1.2, 1.2, 1])
+    col_h0, col_h1, col_h2, col_h3, col_h4, col_h5 = st.columns([0.6, 1.4, 1, 1.2, 1.2, 1])
+    col_h0.markdown("**Active**")
     col_h1.markdown("**Task Name**")
     col_h2.markdown("**Frequency**")
-    col_h3.markdown("**Avg KPI / Req Staff**")
-    col_h4.markdown("**Target KPI / Req Staff**")
+    col_h3.markdown("**Avg KPI / Req**")
+    col_h4.markdown("**Target KPI / Req**")
     col_h5.markdown("**Difference**")
     st.markdown("---")
 
@@ -216,8 +224,13 @@ with tab_calc:
     total_target_staff_req = 0
 
     for task, cfg in st.session_state.task_config.items():
-        c1, c2, c3, c4, c5 = st.columns([1.5, 1, 1.2, 1.2, 1])
-        c1.markdown(f"**{task}**")
+        c0, c1, c2, c3, c4, c5 = st.columns([0.6, 1.4, 1, 1.2, 1.2, 1])
+        
+        # Toggle checkbox for task active status
+        is_active = c0.checkbox(f"Active {task}", value=cfg.get("active", True), key=f"active_{task}", label_visibility="collapsed")
+        st.session_state.task_config[task]["active"] = is_active
+        
+        c1.markdown(f"**{task}**" if is_active else f"~~{task}~~ <small style='color:gray;'>(Skipped)</small>", unsafe_allow_html=True)
         freq = cfg["freq"]
         c2.markdown(f"{freq}x / week" if freq > 1 else "1x / week")
         
@@ -229,29 +242,34 @@ with tab_calc:
         new_target_kpi = c4.number_input(f"Target KPI {task}", min_value=1, value=int(cfg["target_kpi"]), step=10, key=f"edit_target_{task}", label_visibility="collapsed")
         st.session_state.task_config[task]["target_kpi"] = new_target_kpi
         
-        avg_daily_output = new_avg_kpi * hours_per_day
-        avg_req_staff = math.ceil((total_task_plants / avg_daily_output) / target_days) if avg_daily_output > 0 else 0
-        total_avg_staff_req += avg_req_staff
-        
-        target_daily_output = new_target_kpi * hours_per_day
-        target_req_staff = math.ceil((total_task_plants / target_daily_output) / target_days) if target_daily_output > 0 else 0
-        target_req_staff = max(1, target_req_staff)
-        total_target_staff_req += target_req_staff
-        
-        c3.markdown(f"<small>Req: **{avg_req_staff} staff**</small>", unsafe_allow_html=True)
-        c4.markdown(f"<small>Req: **{target_req_staff} staff**</small>", unsafe_allow_html=True)
-        
-        diff = avg_req_staff - target_req_staff
-        if diff > 0:
-            c5.markdown(f"<span style='color: orange;'>+{diff} staff</span>", unsafe_allow_html=True)
-        elif diff < 0:
-            c5.markdown(f"<span style='color: green;'>{diff} staff</span>", unsafe_allow_html=True)
+        if is_active:
+            avg_daily_output = new_avg_kpi * hours_per_day
+            avg_req_staff = math.ceil((total_task_plants / avg_daily_output) / target_days) if avg_daily_output > 0 else 0
+            total_avg_staff_req += avg_req_staff
+            
+            target_daily_output = new_target_kpi * hours_per_day
+            target_req_staff = math.ceil((total_task_plants / target_daily_output) / target_days) if target_daily_output > 0 else 0
+            target_req_staff = max(1, target_req_staff)
+            total_target_staff_req += target_req_staff
+            
+            c3.markdown(f"<small>Req: **{avg_req_staff} staff**</small>", unsafe_allow_html=True)
+            c4.markdown(f"<small>Req: **{target_req_staff} staff**</small>", unsafe_allow_html=True)
+            
+            diff = avg_req_staff - target_req_staff
+            if diff > 0:
+                c5.markdown(f"<span style='color: orange;'>+{diff} staff</span>", unsafe_allow_html=True)
+            elif diff < 0:
+                c5.markdown(f"<span style='color: green;'>{diff} staff</span>", unsafe_allow_html=True)
+            else:
+                c5.markdown("`Match`", unsafe_allow_html=True)
         else:
-            c5.markdown("`Match`", unsafe_allow_html=True)
+            c3.markdown("<small style='color: gray;'>Skipped</small>", unsafe_allow_html=True)
+            c4.markdown("<small style='color: gray;'>Skipped</small>", unsafe_allow_html=True)
+            c5.markdown("<small style='color: gray;'>N/A</small>", unsafe_allow_html=True)
             
         st.markdown("---")
 
-    st.markdown("### 📈 Summary Total Requirements")
+    st.markdown("### 📈 Summary Total Requirements (Active Tasks Only)")
     col_sum1, col_sum2, col_sum3 = st.columns(3)
     col_sum1.metric("Total Staff Required (Avg KPI)", f"{total_avg_staff_req} staff")
     col_sum2.metric("Total Staff Required (Target KPI)", f"{total_target_staff_req} staff")
@@ -273,7 +291,6 @@ with tab_staff:
             submitted = st.form_submit_button("Add Member to Pool")
             
             if submitted and new_name.strip():
-                # Check if already exists
                 if not any(s["name"].lower() == new_name.strip().lower() for s in st.session_state.staff_list):
                     st.session_state.staff_list.append({"name": new_name.strip(), "category": new_cat})
                     st.success(f"Successfully added {new_name.strip()}!")
@@ -289,7 +306,6 @@ with tab_staff:
         if st.button("Remove Selected Staff", type="primary"):
             if staff_to_remove:
                 st.session_state.staff_list = [s for s in st.session_state.staff_list if s["name"] != staff_to_remove]
-                # Also clean them out of any active task assignments
                 for task_key in st.session_state.assignments:
                     st.session_state.assignments[task_key] = [m for m in st.session_state.assignments[task_key] if m != staff_to_remove]
                 st.success(f"Removed {staff_to_remove} from the pool.")
