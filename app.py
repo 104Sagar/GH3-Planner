@@ -89,14 +89,24 @@ gp = st.session_state.global_params
 total_plants = gp["total_rows"] * gp["plants_per_row"]
 
 def sort_tasks(task_dict):
-    priority = ["Clip/Shoot", "Pollination", "Others"]
-    sorted_keys = sorted(task_dict.keys(), key=lambda x: (priority.index(x) if x in priority else 99, x))
-    return {k: task_dict[k] for k in sorted_keys}
+    # Clip/Shoot first (0), Pollination second (1), Others / Other last (99)
+    def task_sort_key(item):
+        name = item[0].lower()
+        if "clip/shoot" in name:
+            return 0
+        elif "pollination" in name:
+            return 1
+        elif "other" in name:
+            return 99
+        else:
+            return 2
+            
+    sorted_items = sorted(task_dict.items(), key=task_sort_key)
+    return {k: v for k, v in sorted_items}
 
 st.session_state.task_config = sort_tasks(st.session_state.task_config)
 active_tasks = {task: cfg for task, cfg in st.session_state.task_config.items() if cfg.get("active", True)}
 
-# Ensure assignments dictionary includes all tasks
 for t in st.session_state.task_config:
     if t not in st.session_state.assignments:
         st.session_state.assignments[t] = []
