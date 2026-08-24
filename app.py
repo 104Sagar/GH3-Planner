@@ -27,6 +27,16 @@ if "task_config" not in st.session_state:
 if "assignments" not in st.session_state:
     st.session_state.assignments = {task: [] for task in st.session_state.task_config.keys()}
 
+# Persistent global parameters stored in session state so tabs can share them
+if "global_params" not in st.session_state:
+    st.session_state.global_params = {
+        "week_date": date.today(),
+        "total_rows": 260,
+        "plants_per_row": 480,
+        "target_days": 5.0,
+        "hours_per_day": 7.35
+    }
+
 def get_category_color(cat):
     colors = {
         "GG": "🟢 **GG**",
@@ -48,24 +58,15 @@ def get_badge_html(name, cat):
 
 st.title("🌿 GH3 Labor Planner")
 
-# Compact Global Settings
-with st.container():
-    c_set1, c_set2, c_set3, c_set4, c_set5 = st.columns(5)
-    week_date = c_set1.date_input("Week:", value=date.today())
-    total_rows = c_set2.number_input("Rows", min_value=1, value=260)
-    plants_per_row = c_set3.number_input("Pl/Row", min_value=1, value=480)
-    target_days = c_set4.number_input("Days", min_value=1.0, value=5.0, step=0.5)
-    hours_per_day = c_set5.number_input("Hrs/Day", min_value=1.0, value=7.35, step=0.05)
-
-total_plants = total_rows * plants_per_row
-st.markdown("---")
-
 tab_assign, tab_calc, tab_staff = st.tabs([
     "📋 Roster", 
     "📊 Calculator", 
     "👥 Staff Pool"
 ])
 
+# Grab current parameters for calculations
+gp = st.session_state.global_params
+total_plants = gp["total_rows"] * gp["plants_per_row"]
 active_tasks = {task: cfg for task, cfg in st.session_state.task_config.items() if cfg.get("active", True)}
 
 # ==========================================
@@ -75,9 +76,9 @@ with tab_assign:
     task_requirements_display = {}
     for task, cfg in active_tasks.items():
         total_task_plants = total_plants * cfg["freq"]
-        daily_output_per_person = cfg["avg_kpi"] * hours_per_day
+        daily_output_per_person = cfg["avg_kpi"] * gp["hours_per_day"]
         total_man_days = total_task_plants / daily_output_per_person if daily_output_per_person > 0 else 0
-        req_staff = math.ceil(total_man_days / target_days)
+        req_staff = math.ceil(total_man_days / gp["target_days"])
         task_requirements_display[task] = req_staff
 
     col_pool, col_tasks = st.columns([1, 1.5])
@@ -139,7 +140,7 @@ with tab_assign:
                     category_map[cat] = []
                 category_map[cat].append({"name": name, "task": task})
 
-    output_text = f"GH3 ROSTER ({week_date.strftime('%d %b %Y')})\n\n"
+    output_text = f"GH3 ROSTER ({gp['week_date'].strftime('%d %b %Y')})\n\n"
     for cat in ["GG", "Leading Hand", "TOTC", "Urson"]:
         members = category_map[cat]
         if members:
@@ -151,9 +152,19 @@ with tab_assign:
     st.code(output_text, language="text")
 
 # ==========================================
-# TAB 2: CALCULATOR & KPI EDIT
+# TAB 2: CALCULATOR, SETTINGS & KPI EDIT
 # ==========================================
 with tab_calc:
+    st.subheader("⚙️ Greenhouse Settings & Parameters")
+    
+    c_set1, c_set2, c_set3, c_set4, c_set5 = st.columns(5)
+    gp["week_date"] = c_set1.date_input("Week:", value=gp["week_date"])
+    gp["total_rows"] = c_set2.number_input("Rows", min_value=1, value=gp["total_rows"])
+    gp["plants_per_row"] = c_set3.number_input("Pl/Row", min_value=1, value=gp["plants_per_row"])
+    gp["target_days"] = c_set4.number_input("Days", min_value=1.0, value=gp["target_days"], step=0.5)
+    gp["hours_per_day"] = c_set5.number_input("Hrs/Day", min_value=1.0, value=gp["hours_per_day"], step=0.05)
+
+    st.markdown("---")
     st.subheader("📊 Calculator & KPIs")
     
     total_avg_staff_req = 0
@@ -175,12 +186,12 @@ with tab_calc:
         st.session_state.task_config[task]["target_kpi"] = new_target_kpi
         
         if is_active:
-            avg_daily_output = new_avg_kpi * hours_per_day
-            avg_req_staff = math.ceil((total_task_plants / avg_daily_output) / target_days) if avg_daily_output > 0 else 0
+            avg_daily_output = new_avg_kpi * gp["hours_per_day"]
+            avg_req_staff = math.ceil((total_task_plants / avg_daily_output) / gp["target_days"]) if avg_daily_output > 0 else 0
             total_avg_staff_req += avg_req_staff
             
-            target_daily_output = new_target_kpi * hours_per_day
-            target_req_staff = math.ceil((total_task_plants / target_daily_output) / target_days) if target_daily_output > 0 else 0
+            target_daily_output = new_target_kpi * gp["hours_per_day"]
+            target_req_staff = math.ceil((total_task_plants / target_daily_output) / gp["target_days"]) if target_daily_output > 0 else 0
             target_req_staff = max(1, target_req_staff)
             total_target_staff_req += target_req_staff
             
