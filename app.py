@@ -7,7 +7,7 @@ from datetime import date
 
 st.set_page_config(page_title="GH Labor Planner", layout="wide")
 
-# --- ULTRA-COMPACT CSS STYLING ---
+# --- ULTRA-COMPACT CSS STYLING & MAP GRID ---
 st.markdown("""
     <style>
         .block-container {
@@ -47,15 +47,16 @@ st.markdown("""
             border-top: 1px solid #333;
             padding-top: 0.3rem;
         }
-        .center-path {
+        .center-path-banner {
             background-color: #3b3a30;
-            padding: 8px;
+            padding: 10px;
             border-radius: 4px;
             text-align: center;
             font-weight: bold;
             color: #ffb703;
-            margin: 8px 0;
-            border: 1px dashed #ffb703;
+            margin: 10px 0;
+            border: 2px dashed #ffb703;
+            letter-spacing: 1px;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -481,70 +482,78 @@ with tab_staff:
     st.markdown('<div class="footer-watermark">Developed by Sagar</div>', unsafe_allow_html=True)
 
 # ==========================================
-# TAB 4: GREENHOUSE INTERACTIVE MAP
+# TAB 4: GREENHOUSE VISUAL FLOOR MAP
 # ==========================================
 with tab_map:
-    st.subheader("🗺️ Greenhouse Interactive Map")
-    st.markdown("Select a quadrant and bay to inspect its 5 rows (North Side: Odd rows 3001–3259 | South Side: Even rows 3002–3260).")
+    st.subheader("🗺️ Greenhouse Floor Map")
+    st.markdown("Click any Bay block below to inspect its 5 rows. Layout is split by the East-to-West center path.")
     
-    # Select Side
-    side_choice = st.radio("Select Side:", ["North Side (Odd Rows: 3001 - 3259)", "South Side (Even Rows: 3002 - 3260)"], horizontal=True)
-    
-    is_north = "North" in side_choice
-    
-    # Select Quadrant (13 bays each)
-    quad_choice = st.radio("Select Quadrant (Bays):", ["Bays 1 to 13", "Bays 14 to 26"], horizontal=True)
-    
-    start_bay = 1 if "1 to 13" in quad_choice else 14
-    end_bay = 13 if "1 to 13" in quad_choice else 26
-    
-    st.markdown("---")
-    st.markdown(f"**Click a Bay ({side_choice.split()[0]} - {quad_choice}):**")
-    
-    # Display 13 clickable bay buttons in compact columns
-    bay_cols = st.columns(7)
-    selected_bay = None
-    
-    for b_idx in range(start_bay, end_bay + 1):
-        col_target = bay_cols[(b_idx - start_bay) % 7]
-        if col_target.button(f"Bay {b_idx}", key=f"bay_btn_{side_choice}_{b_idx}"):
-            st.session_state.active_bay = b_idx
-            st.session_state.active_side = is_north
+    # Initialize selected map inspection state
+    if "map_side" not in st.session_state:
+        st.session_state.map_side = "North"
+    if "map_bay" not in st.session_state:
+        st.session_state.map_bay = 1
 
-    # Check active bay from session state
-    current_active_bay = st.session_state.get("active_bay", start_bay)
-    current_active_side = st.session_state.get("active_side", is_north)
+    # --- NORTH SIDE MAP (BAYS 1 to 26) ---
+    st.markdown("##### ⬆️ NORTH SIDE (Odd Rows: 3001 – 3259)")
     
-    # Ensure active bay is within current range
-    if current_active_bay < start_bay or current_active_bay > end_bay or current_active_side != is_north:
-        current_active_bay = start_bay
-        st.session_state.active_bay = start_bay
-        st.session_state.active_side = is_north
+    # Split into 2 rows of 13 buttons for a neat floor map layout
+    n_cols_1 = st.columns(13)
+    for b in range(1, 14):
+        if n_cols_1[b-1].button(f"B{b}", key=f"map_n_{b}"):
+            st.session_state.map_side = "North"
+            st.session_state.map_bay = b
+            
+    n_cols_2 = st.columns(13)
+    for b in range(14, 27):
+        if n_cols_2[b-14].button(f"B{b}", key=f"map_n_{b}"):
+            st.session_state.map_side = "North"
+            st.session_state.map_bay = b
 
-    st.markdown("---")
-    st.markdown(f"### 🔍 Details for Bay {current_active_bay} ({'North Side' if current_active_side else 'South Side'})")
-    
-    # Calculate 5 rows inside the selected bay
-    # Bay 1 starts at 3001 (North) or 3002 (South). Each bay has 5 rows.
-    base_start = 3001 if current_active_side else 3002
-    bay_offset = (current_active_bay - 1) * 10 # Each bay covers 10 numbers (5 rows * step of 2)
-    
-    row_1 = base_start + bay_offset
-    row_2 = row_1 + 2
-    row_3 = row_2 + 2
-    row_4 = row_3 + 2
-    row_5 = row_4 + 2
-    
-    r_cols = st.columns(5)
-    r_cols[0].metric("Row 1", f"{row_1}")
-    r_cols[1].metric("Row 2", f"{row_2}")
-    r_cols[2].metric("Row 3", f"{row_3}")
-    r_cols[3].metric("Row 4", f"{row_4}")
-    r_cols[4].metric("Row 5", f"{row_5}")
-    
+    # --- CENTER PATH BANNER ---
     st.markdown(
-        f"<div class='center-path'>↔️ CENTER PATH DIVIDER (East to West) ↔️</div>", 
+        '<div class="center-path-banner">↔️ EAST — CENTER ACCESSWAY PATH — WEST ↔️</div>', 
         unsafe_allow_html=True
     )
+
+    # --- SOUTH SIDE MAP (BAYS 1 to 26) ---
+    st.markdown("##### ⬇️ SOUTH SIDE (Even Rows: 3002 – 3260)")
+    
+    s_cols_1 = st.columns(13)
+    for b in range(1, 14):
+        if s_cols_1[b-1].button(f"B{b}", key=f"map_s_{b}"):
+            st.session_state.map_side = "South"
+            st.session_state.map_bay = b
+            
+    s_cols_2 = st.columns(13)
+    for b in range(14, 27):
+        if s_cols_2[b-14].button(f"B{b}", key=f"map_s_{b}"):
+            st.session_state.map_side = "South"
+            st.session_state.map_bay = b
+
+    st.markdown("---")
+    
+    # --- SELECTED BAY INSPECTOR ---
+    cur_side = st.session_state.map_side
+    cur_bay = st.session_state.map_bay
+    
+    is_n = (cur_side == "North")
+    base_num = 3001 if is_n else 3002
+    offset = (cur_bay - 1) * 10
+    
+    r1 = base_num + offset
+    r2 = r1 + 2
+    r3 = r2 + 2
+    r4 = r3 + 2
+    r5 = r4 + 2
+    
+    st.markdown(f"### 🔍 Inspected: **{cur_side} Side — Bay {cur_bay}** (5 Rows)")
+    
+    rc = st.columns(5)
+    rc[0].metric("Row 1", f"{r1}")
+    rc[1].metric("Row 2", f"{r2}")
+    rc[2].metric("Row 3", f"{r3}")
+    rc[3].metric("Row 4", f"{r4}")
+    rc[4].metric("Row 5", f"{r5}")
     
     st.markdown('<div class="footer-watermark">Developed by Sagar</div>', unsafe_allow_html=True)
