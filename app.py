@@ -106,7 +106,7 @@ tab_assign, tab_calc, tab_staff = st.tabs([
 ])
 
 # ==========================================
-# TAB 1: ROSTER & ASSIGNMENTS
+# TAB 1: ROSTER & ASSIGNMENTS (ANTI-DOUBLE BOOKING)
 # ==========================================
 with tab_assign:
     st.subheader("Interactive Assignment & Copy-Paste Roster")
@@ -134,20 +134,33 @@ with tab_assign:
     with col_tasks:
         st.markdown("#### 📝 Task Assignments")
         all_staff_names = [s["name"] for s in st.session_state.staff_list]
-        assigned_flat = []
+        
+        # Track already assigned staff across other tasks to prevent double booking
+        current_assigned_flat = []
+        for t, assigned_list in st.session_state.assignments.items():
+            current_assigned_flat.extend(assigned_list)
 
         for task, req_cnt in task_requirements_display.items():
             st.markdown(f"**{task}** — <span style='color: #2D6A4F; font-weight: 600;'>Required: {req_cnt} staff</span>", unsafe_allow_html=True)
             
+            # Available options for this specific task exclude people already assigned to OTHER tasks
+            currently_selected = [m for m in st.session_state.assignments.get(task, []) if m in all_staff_names]
+            other_assigned = [m for m in current_assigned_flat if m not in currently_selected]
+            available_options = [m for m in all_staff_names if m not in other_assigned]
+
             assigned = st.multiselect(
                 f"Assign for {task}",
-                options=all_staff_names,
-                default=[m for m in st.session_state.assignments.get(task, []) if m in all_staff_names],
+                options=available_options,
+                default=currently_selected,
                 key=f"assign_task_{task}",
                 label_visibility="collapsed"
             )
             st.session_state.assignments[task] = assigned
-            assigned_flat.extend(assigned)
+            
+            # Refresh flat list for next iteration
+            current_assigned_flat = []
+            for t, assigned_list in st.session_state.assignments.items():
+                current_assigned_flat.extend(assigned_list)
             
             diff = len(assigned) - req_cnt
             if diff == 0:
@@ -157,10 +170,6 @@ with tab_assign:
             else:
                 st.markdown(f"<small style='color: red;'>❌ {len(assigned)} assigned (Need {abs(diff)} more)</small>", unsafe_allow_html=True)
             st.markdown("---")
-
-        duplicates = set([x for x in assigned_flat if assigned_flat.count(x) > 1])
-        if duplicates:
-            st.error(f"⚠️ **Double Booking Warning:** {', '.join(duplicates)} are assigned to multiple tasks!")
 
     st.markdown("---")
     st.markdown("### 📱 Copy-Paste Format (Grouped by Category)")
@@ -193,7 +202,6 @@ with tab_assign:
 with tab_calc:
     st.subheader("📊 Staff Requirement Breakdown & KPI Customizer")
     st.markdown(f"Calculated based on **{total_rows} rows**, **{plants_per_row} plants/row** (**{total_plants:,} total plants**), **{hours_per_day} hrs/day**, and a target of **{target_days} days**.")
-    st.markdown("You can directly edit the **Average KPI** and **Target KPI** values for each task below:")
     st.markdown("---")
     
     col_h1, col_h2, col_h3, col_h4, col_h5 = st.columns([1.5, 1, 1.2, 1.2, 1])
@@ -215,21 +223,19 @@ with tab_calc:
         
         total_task_plants = total_plants * freq
         
-        # Editable KPIs
         new_avg_kpi = c3.number_input(f"Avg KPI {task}", min_value=1, value=int(cfg["avg_kpi"]), step=10, key=f"edit_avg_{task}", label_visibility="collapsed")
         st.session_state.task_config[task]["avg_kpi"] = new_avg_kpi
         
         new_target_kpi = c4.number_input(f"Target KPI {task}", min_value=1, value=int(cfg["target_kpi"]), step=10, key=f"edit_target_{task}", label_visibility="collapsed")
         st.session_state.task_config[task]["target_kpi"] = new_target_kpi
         
-        # Calculations
         avg_daily_output = new_avg_kpi * hours_per_day
         avg_req_staff = math.ceil((total_task_plants / avg_daily_output) / target_days) if avg_daily_output > 0 else 0
         total_avg_staff_req += avg_req_staff
         
         target_daily_output = new_target_kpi * hours_per_day
         target_req_staff = math.ceil((total_task_plants / target_daily_output) / target_days) if target_daily_output > 0 else 0
-        target_req_staff = max(1, target_req_staff) # floor at 1 if valid
+        target_req_staff = max(1, target_req_staff)
         total_target_staff_req += target_req_staff
         
         c3.markdown(f"<small>Req: **{avg_req_staff} staff**</small>", unsafe_allow_html=True)
@@ -245,13 +251,11 @@ with tab_calc:
             
         st.markdown("---")
 
-    # Summary Totals Footer
     st.markdown("### 📈 Summary Total Requirements")
     col_sum1, col_sum2, col_sum3 = st.columns(3)
     col_sum1.metric("Total Staff Required (Avg KPI)", f"{total_avg_staff_req} staff")
     col_sum2.metric("Total Staff Required (Target KPI)", f"{total_target_staff_req} staff")
     col_sum3.metric("Total Available Staff Pool", f"{len(st.session_state.staff_list)} members")
-
 
 # ==========================================
 # TAB 3: ADD / REMOVE STAFF POOL
@@ -269,18 +273,25 @@ with tab_staff:
             submitted = st.form_submit_button("Add Member to Pool")
             
             if submitted and new_name.strip():
-                st.session_state.staff_list.append({"name": new_name.strip(), "category": new_cat})
-                st.success(f"Successfully added {new_name.strip()}!")
-                st.rerun()
+                # Check if already exists
+                if not any(s["name"].lower() == new_name.strip().lower() for s in st.session_state.staff_list):
+                    st.session_state.staff_list.append({"name": new_name.strip(), "category": new_cat})
+                    st.success(f"Successfully added {new_name.strip()}!")
+                    st.rerun()
+                else:
+                    st.error("A staff member with this name already exists!")
 
     with col_remove:
         st.markdown("#### ❌ Remove Staff Member")
         all_current_names = [s["name"] for s in st.session_state.staff_list]
-        staff_to_remove = st.selectbox("Select staff member who left:", options=[""] + all_current_names)
+        staff_to_remove = st.selectbox("Select staff member who left:", options=[""] + all_current_names, key="remove_staff_select")
         
         if st.button("Remove Selected Staff", type="primary"):
             if staff_to_remove:
                 st.session_state.staff_list = [s for s in st.session_state.staff_list if s["name"] != staff_to_remove]
+                # Also clean them out of any active task assignments
+                for task_key in st.session_state.assignments:
+                    st.session_state.assignments[task_key] = [m for m in st.session_state.assignments[task_key] if m != staff_to_remove]
                 st.success(f"Removed {staff_to_remove} from the pool.")
                 st.rerun()
             else:
