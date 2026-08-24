@@ -7,7 +7,7 @@ from datetime import date
 
 st.set_page_config(page_title="GH Labor Planner", layout="wide")
 
-# --- ULTRA-COMPACT CSS STYLING & DUAL COLUMN ROW MAP ---
+# --- ULTRA-COMPACT CSS STYLING & INTERACTIVE MAP ---
 st.markdown("""
     <style>
         .block-container {
@@ -54,6 +54,7 @@ STAFF_FILE = "staff_data.json"
 TASK_FILE = "task_data.json"
 ASSIGNMENT_FILE = "assignment_data.json"
 PARAMS_FILE = "params_data.json"
+MAP_FILE = "map_data.json"
 
 DEFAULT_STAFF = [
     {"name": "Marie", "category": "GG"}, {"name": "Kid", "category": "GG"}, {"name": "Ting", "category": "GG"}, {"name": "Tommy", "category": "GG"}, {"name": "Risa", "category": "GG"},
@@ -105,6 +106,9 @@ if "assignments" not in st.session_state:
 
 if "global_params" not in st.session_state:
     st.session_state.global_params = load_data(PARAMS_FILE, DEFAULT_PARAMS)
+
+if "map_progress" not in st.session_state:
+    st.session_state.map_progress = load_data(MAP_FILE, {})
 
 def get_category_color(cat):
     colors = {
@@ -471,32 +475,90 @@ with tab_staff:
     st.markdown('<div class="footer-watermark">Developed by Sagar</div>', unsafe_allow_html=True)
 
 # ==========================================
-# TAB 4: GREENHOUSE MAP (SIDE-BY-SIDE VERTICAL ROWS)
+# TAB 4: GREENHOUSE MAP & TASK TRACKING
 # ==========================================
 with tab_map:
-    st.subheader("🗺️ Greenhouse Map View")
-    st.markdown("North Side (Odd rows: 3001–3259) on the left | South Side (Even rows: 3002–3260) on the right.")
+    st.subheader("🗺️ Greenhouse Task Map")
     
-    # Generate row arrays
+    # Task selector dropdown
+    available_tasks_list = list(st.session_state.task_config.keys())
+    selected_track_task = st.selectbox("Select Task to Track & Color-Code:", options=available_tasks_list, key="map_task_selector")
+    
+    st.markdown("<small>💡 <i>Click any row button below to cycle its status: <b>Pending (Default)</b> ➡️ <b>Half Finished (Yellow)</b> ➡️ <b>Finished (Green)</b></i></small>", unsafe_allow_html=True)
+    st.markdown("---")
+    
+    # Initialize task map storage dictionary if missing
+    if selected_track_task not in st.session_state.map_progress:
+        st.session_state.map_progress[selected_track_task] = {}
+
     north_rows = list(range(3001, 3260, 2))
     south_rows = list(range(3002, 3261, 2))
     
     col_north, col_south = st.columns(2)
     
+    map_updated = False
+    
     with col_north:
         st.markdown("#### ⬆️ North Side (Odd Rows)")
         for r in north_rows:
-            st.markdown(
-                f"<div style='background-color: #262d35; border: 1px solid #444; padding: 6px 10px; margin-bottom: 4px; border-radius: 4px; text-align: center; font-weight: 500;'>Row {r}</div>",
-                unsafe_allow_html=True
-            )
+            r_str = str(r)
+            current_status = st.session_state.map_progress[selected_track_task].get(r_str, "Pending")
             
+            # Button color styling
+            if current_status == "Finished":
+                btn_label = f"🟢 Row {r} (Finished)"
+            elif current_status == "Half Finished":
+                btn_label = f"🟡 Row {r} (Half Finished)"
+            else:
+                btn_label = f"⚪ Row {r} (Pending)"
+                
+            if st.button(btn_label, key=f"row_btn_{selected_track_task}_{r}"):
+                # Cycle status: Pending -> Half Finished -> Finished -> Pending
+                if current_status == "Pending":
+                    new_status = "Half Finished"
+                elif current_status == "Half Finished":
+                    new_status = "Finished"
+                else:
+                    new_status = "Pending"
+                
+                st.session_state.map_progress[selected_track_task][r_str] = new_status
+                map_updated = True
+                st.rerun()
+                
     with col_south:
         st.markdown("#### ⬇️ South Side (Even Rows)")
         for r in south_rows:
-            st.markdown(
-                f"<div style='background-color: #262d35; border: 1px solid #444; padding: 6px 10px; margin-bottom: 4px; border-radius: 4px; text-align: center; font-weight: 500;'>Row {r}</div>",
-                unsafe_allow_html=True
-            )
+            r_str = str(r)
+            current_status = st.session_state.map_progress[selected_track_task].get(r_str, "Pending")
             
+            if current_status == "Finished":
+                btn_label = f"🟢 Row {r} (Finished)"
+            elif current_status == "Half Finished":
+                btn_label = f"🟡 Row {r} (Half Finished)"
+            else:
+                btn_label = f"⚪ Row {r} (Pending)"
+                
+            if st.button(btn_label, key=f"row_btn_{selected_track_task}_{r}"):
+                if current_status == "Pending":
+                    new_status = "Half Finished"
+                elif current_status == "Half Finished":
+                    new_status = "Finished"
+                else:
+                    new_status = "Pending"
+                
+                st.session_state.map_progress[selected_track_task][r_str] = new_status
+                map_updated = True
+                st.rerun()
+
+    if map_updated:
+        save_data(MAP_FILE, st.session_state.map_progress)
+
+    st.markdown("---")
+    if st.button("🔄 Reset All Map Progress", type="primary"):
+        st.session_state.map_progress = {}
+        if os.path.exists(MAP_FILE):
+            os.remove(MAP_FILE)
+        st.success("Map progress reset successfully!")
+        st.rerun()
+
     st.markdown('<div class="footer-watermark">Developed by Sagar</div>', unsafe_allow_html=True)
