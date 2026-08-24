@@ -34,13 +34,13 @@ if "staff_list" not in st.session_state:
 
 if "task_config" not in st.session_state:
     st.session_state.task_config = {
-        "Clip/Shoot": {"target_kpi": 674, "avg_kpi": 400, "freq": 1, "active": True, "is_manual": False},
-        "Pollination": {"target_kpi": 2500, "avg_kpi": 2250, "freq": 3, "active": True, "is_manual": False},
-        "De-leafing": {"target_kpi": 800, "avg_kpi": 750, "freq": 1, "active": True, "is_manual": False},
-        "Truss Support": {"target_kpi": 1200, "avg_kpi": 550, "freq": 1, "active": True, "is_manual": False},
-        "Pruning": {"target_kpi": 1200, "avg_kpi": 900, "freq": 1, "active": True, "is_manual": False},
-        "Lowering": {"target_kpi": 1333, "avg_kpi": 1400, "freq": 1, "active": True, "is_manual": False},
-        "Others": {"target_kpi": 0, "avg_kpi": 0, "freq": 1, "active": True, "is_manual": True, "manual_req": 2},
+        "Clip/Shoot": {"target_kpi": 674, "avg_kpi": 400, "freq": 1, "active": True, "is_manual": False, "deletable": False},
+        "Pollination": {"target_kpi": 2500, "avg_kpi": 2250, "freq": 3, "active": True, "is_manual": False, "deletable": False},
+        "De-leafing": {"target_kpi": 800, "avg_kpi": 750, "freq": 1, "active": True, "is_manual": False, "deletable": False},
+        "Truss Support": {"target_kpi": 1200, "avg_kpi": 550, "freq": 1, "active": True, "is_manual": False, "deletable": False},
+        "Pruning": {"target_kpi": 1200, "avg_kpi": 900, "freq": 1, "active": True, "is_manual": False, "deletable": False},
+        "Lowering": {"target_kpi": 1333, "avg_kpi": 1400, "freq": 1, "active": True, "is_manual": False, "deletable": False},
+        "Others": {"target_kpi": 0, "avg_kpi": 0, "freq": 1, "active": True, "is_manual": True, "manual_req": 2, "deletable": False},
     }
 
 if "assignments" not in st.session_state:
@@ -273,27 +273,46 @@ with tab_calc:
                 
         st.markdown("---")
 
-    with st.expander("➕ Add New Custom Task"):
-        with st.form("new_task_form", clear_on_submit=True):
-            new_task_name = st.text_input("Task Name")
-            new_task_type = st.selectbox("Task Type", ["KPI-based (Calculated)", "Manual Member Count"])
-            new_task_freq = st.number_input("Frequency per week", min_value=1, value=1)
-            submitted_task = st.form_submit_button("Create Task")
-            
-            if submitted_task and new_task_name.strip():
-                if new_task_name.strip() not in st.session_state.task_config:
-                    is_man = (new_task_type == "Manual Member Count")
-                    st.session_state.task_config[new_task_name.strip()] = {
-                        "target_kpi": 1000, "avg_kpi": 800, "freq": new_task_freq, 
-                        "active": True, "is_manual": is_man, "manual_req": 2
-                    }
-                    if new_task_name.strip() not in st.session_state.assignments:
-                        st.session_state.assignments[new_task_name.strip()] = []
-                    st.success(f"Added task {new_task_name.strip()}!")
+    # Expander to Add or Delete Tasks
+    col_exp1, col_exp2 = st.columns(2)
+    with col_exp1:
+        with st.expander("➕ Add New Task"):
+            with st.form("new_task_form", clear_on_submit=True):
+                new_task_name = st.text_input("Task Name")
+                new_task_type = st.selectbox("Task Type", ["KPI-based (Calculated)", "Manual Member Count"])
+                new_task_freq = st.number_input("Frequency per week", min_value=1, value=1)
+                submitted_task = st.form_submit_button("Create Task")
+                
+                if submitted_task and new_task_name.strip():
+                    if new_task_name.strip() not in st.session_state.task_config:
+                        is_man = (new_task_type == "Manual Member Count")
+                        st.session_state.task_config[new_task_name.strip()] = {
+                            "target_kpi": 1000, "avg_kpi": 800, "freq": new_task_freq, 
+                            "active": True, "is_manual": is_man, "manual_req": 2, "deletable": True
+                        }
+                        if new_task_name.strip() not in st.session_state.assignments:
+                            st.session_state.assignments[new_task_name.strip()] = []
+                        st.success(f"Added task {new_task_name.strip()}!")
+                        st.rerun()
+                    else:
+                        st.error("Task already exists!")
+
+    with col_exp2:
+        with st.expander("❌ Delete Custom Task"):
+            # Only allow deleting custom tasks (not the default built-in ones)
+            deletable_tasks = [t for t, cfg in st.session_state.task_config.items() if cfg.get("deletable", True)]
+            task_to_delete = st.selectbox("Select task to delete:", options=[""] + deletable_tasks)
+            if st.button("Delete Task", type="primary"):
+                if task_to_delete:
+                    del st.session_state.task_config[task_to_delete]
+                    if task_to_delete in st.session_state.assignments:
+                        del st.session_state.assignments[task_to_delete]
+                    st.success(f"Deleted task '{task_to_delete}'.")
                     st.rerun()
                 else:
-                    st.error("Task already exists!")
+                    st.warning("Please select a task to delete.")
 
+    st.markdown("---")
     st.metric("Total Staff Required (Avg)", f"{total_avg_staff_req}")
     st.metric("Total Available Pool", f"{len(st.session_state.staff_list)}")
 
