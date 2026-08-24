@@ -7,7 +7,7 @@ from datetime import date
 
 st.set_page_config(page_title="GH Labor Planner", layout="wide")
 
-# --- ULTRA-COMPACT CSS STYLING & MAP GRID ---
+# --- ULTRA-COMPACT CSS STYLING & HORIZONTAL BAY SCROLLER ---
 st.markdown("""
     <style>
         .block-container {
@@ -57,6 +57,13 @@ st.markdown("""
             margin: 10px 0;
             border: 2px dashed #ffb703;
             letter-spacing: 1px;
+        }
+        .bay-container {
+            display: flex;
+            overflow-x: auto;
+            gap: 6px;
+            padding-bottom: 5px;
+            margin-bottom: 5px;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -486,27 +493,18 @@ with tab_staff:
 # ==========================================
 with tab_map:
     st.subheader("🗺️ Greenhouse Floor Map")
-    st.markdown("Click any Bay block below to inspect its 5 rows. Layout is split by the East-to-West center path.")
+    st.markdown("Click any Bay block below to inspect its 5 rows. All 26 bays are lined up horizontally.")
     
-    # Initialize selected map inspection state
     if "map_side" not in st.session_state:
         st.session_state.map_side = "North"
     if "map_bay" not in st.session_state:
         st.session_state.map_bay = 1
 
-    # --- NORTH SIDE MAP (BAYS 1 to 26) ---
+    # --- NORTH SIDE MAP (BAYS 1 to 26 in a single horizontal line) ---
     st.markdown("##### ⬆️ NORTH SIDE (Odd Rows: 3001 – 3259)")
-    
-    # Split into 2 rows of 13 buttons for a neat floor map layout
-    n_cols_1 = st.columns(13)
-    for b in range(1, 14):
-        if n_cols_1[b-1].button(f"B{b}", key=f"map_n_{b}"):
-            st.session_state.map_side = "North"
-            st.session_state.map_bay = b
-            
-    n_cols_2 = st.columns(13)
-    for b in range(14, 27):
-        if n_cols_2[b-14].button(f"B{b}", key=f"map_n_{b}"):
+    north_cols = st.columns(26)
+    for b in range(1, 27):
+        if north_cols[b-1].button(f"B{b}", key=f"map_n_{b}"):
             st.session_state.map_side = "North"
             st.session_state.map_bay = b
 
@@ -516,18 +514,11 @@ with tab_map:
         unsafe_allow_html=True
     )
 
-    # --- SOUTH SIDE MAP (BAYS 1 to 26) ---
+    # --- SOUTH SIDE MAP (BAYS 1 to 26 in a single horizontal line) ---
     st.markdown("##### ⬇️ SOUTH SIDE (Even Rows: 3002 – 3260)")
-    
-    s_cols_1 = st.columns(13)
-    for b in range(1, 14):
-        if s_cols_1[b-1].button(f"B{b}", key=f"map_s_{b}"):
-            st.session_state.map_side = "South"
-            st.session_state.map_bay = b
-            
-    s_cols_2 = st.columns(13)
-    for b in range(14, 27):
-        if s_cols_2[b-14].button(f"B{b}", key=f"map_s_{b}"):
+    south_cols = st.columns(26)
+    for b in range(1, 27):
+        if south_cols[b-1].button(f"B{b}", key=f"map_s_{b}"):
             st.session_state.map_side = "South"
             st.session_state.map_bay = b
 
