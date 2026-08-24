@@ -7,49 +7,39 @@ from datetime import date
 
 st.set_page_config(page_title="GH Labor Planner", layout="wide")
 
-# --- ULTRA-COMPACT MOBILE 2-COLUMN GRID STYLING ---
+# --- CLEAN COMPACT CSS ---
 st.markdown("""
     <style>
         .block-container {
-            padding-top: 0.6rem;
-            padding-bottom: 0.4rem;
-            padding-left: 0.5rem;
-            padding-right: 0.5rem;
+            padding-top: 0.8rem;
+            padding-bottom: 0.5rem;
+            padding-left: 0.8rem;
+            padding-right: 0.8rem;
         }
         hr {
-            margin-top: 0.2rem;
-            margin-bottom: 0.2rem;
+            margin-top: 0.3rem;
+            margin-bottom: 0.3rem;
         }
         h1 {
-            font-size: 1.4rem !important;
-            margin-bottom: 0.1rem !important;
+            font-size: 1.6rem !important;
+            margin-bottom: 0.2rem !important;
         }
         h2, h3, h5 {
-            font-size: 1rem !important;
-            margin-top: 0.1rem !important;
-            margin-bottom: 0.1rem !important;
+            font-size: 1.1rem !important;
+            margin-top: 0.2rem !important;
+            margin-bottom: 0.2rem !important;
         }
         p, label, span, div {
-            font-size: 0.8rem !important;
+            font-size: 0.85rem !important;
         }
         .footer-watermark {
             text-align: center;
-            font-size: 0.65rem;
+            font-size: 0.7rem;
             color: #888888;
-            margin-top: 0.8rem;
-            margin-bottom: 0.4rem;
+            margin-top: 1rem;
+            margin-bottom: 0.5rem;
             border-top: 1px solid #333;
-            padding-top: 0.2rem;
-        }
-        /* STRICT SIDE-BY-SIDE MOBILE GRID */
-        .row-grid-container {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 6px;
-            width: 100%;
-        }
-        .row-column-box {
-            min-width: 0;
+            padding-top: 0.3rem;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -494,70 +484,60 @@ with tab_map:
     north_rows = list(range(3001, 3260, 2))
     south_rows = list(range(3002, 3261, 2))
     
-    # Handle button clicks via query parameters or unique key triggers
-    clicked_row = None
-    for r in north_rows + south_rows:
-        if st.button(f"click_r_{r}", key=f"action_map_row_{r}", help=None):
-            clicked_row = str(r)
+    # Use standard Streamlit columns paired side-by-side cleanly
+    col_north, col_south = st.columns(2)
+    
+    map_updated = False
 
-    if clicked_row:
-        curr = st.session_state.map_progress[selected_track_task].get(clicked_row, "Unfilled")
-        if curr == "Unfilled":
-            nxt = "Half Finished"
-        elif curr == "Half Finished":
-            nxt = "Finished"
-        else:
-            nxt = "Unfilled"
-        st.session_state.map_progress[selected_track_task][clicked_row] = nxt
-        save_data(MAP_FILE, st.session_state.map_progress)
-        st.rerun()
-
-    # Build pure CSS HTML grid to guarantee strict side-by-side display on mobile
-    def render_compact_side(rows_list, side_title):
-        html = f"<div class='row-column-box'><h5 style='text-align:center;'>{side_title}</h5>"
-        for r in rows_list:
+    with col_north:
+        st.markdown("##### ⬆️ North Side")
+        for r in north_rows:
             r_str = str(r)
             status = st.session_state.map_progress[selected_track_task].get(r_str, "Unfilled")
             
             if status == "Finished":
-                dot = "🟢"
-                bg = "#1b381e"
-                border_col = "#2e7d32"
+                label = f"🟢 {r}"
             elif status == "Half Finished":
-                dot = "🟡"
-                bg = "#4a3d00"
-                border_col = "#fbc02d"
+                label = f"🟡 {r}"
             else:
-                dot = "⚪"
-                bg = "#2b2b2b"
-                border_col = "#444"
+                label = f"⚪ {r}"
                 
-            html += f"""
-                <form action='' method='get' style='margin-bottom: 3px;'>
-                    <button name='click_r_{r}' value='1' style='
-                        width: 100%;
-                        background: {bg};
-                        color: #fff;
-                        border: 1px solid {border_col};
-                        border-radius: 3px;
-                        padding: 4px 6px;
-                        font-size: 0.78rem;
-                        font-weight: 500;
-                        text-align: left;
-                        cursor: pointer;
-                    '>{dot} Row {r}</button>
-                </form>
-            """
-        html += "</div>"
-        return html
+            if st.button(label, key=f"btn_n_{selected_track_task}_{r}", use_container_width=True):
+                if status == "Unfilled":
+                    new_status = "Half Finished"
+                elif status == "Half Finished":
+                    new_status = "Finished"
+                else:
+                    new_status = "Unfilled"
+                st.session_state.map_progress[selected_track_task][r_str] = new_status
+                map_updated = True
 
-    grid_layout_html = f"""
-        <div class='row-grid-container'>
-            {render_compact_side(north_rows, "⬆️ North Side")}
-            {render_compact_side(south_rows, "⬇️ South Side")}
-        </div>
-    """
-    st.markdown(grid_layout_html, unsafe_allow_html=True)
+    with col_south:
+        st.markdown("##### ⬇️ South Side")
+        for r in south_rows:
+            r_str = str(r)
+            status = st.session_state.map_progress[selected_track_task].get(r_str, "Unfilled")
+            
+            if status == "Finished":
+                label = f"🟢 {r}"
+            elif status == "Half Finished":
+                label = f"🟡 {r}"
+            else:
+                label = f"⚪ {r}"
+                
+            if st.button(label, key=f"btn_s_{selected_track_task}_{r}", use_container_width=True):
+                if status == "Unfilled":
+                    new_status = "Half Finished"
+                elif status == "Half Finished":
+                    new_status = "Finished"
+                else:
+                    new_status = "Unfilled"
+                st.session_state.map_progress[selected_track_task][r_str] = new_status
+                map_updated = True
+
+    if map_updated:
+        save_data(MAP_FILE, st.session_state.map_progress)
+        st.rerun()
 
     st.markdown("---")
     if st.button("🔄 Reset All Map Progress", type="primary"):
