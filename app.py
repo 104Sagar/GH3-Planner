@@ -5,9 +5,9 @@ import streamlit as st
 import pandas as pd
 from datetime import date
 
-st.set_page_config(page_title="GH3 Roster & Allocation Planner", layout="wide")
+st.set_page_config(page_title="GH Labor Planner", layout="wide")
 
-# --- COMPACT CSS STYLING ---
+# --- COMPACT CSS STYLING & WATERMARK ---
 st.markdown("""
     <style>
         .block-container {
@@ -26,7 +26,20 @@ st.markdown("""
         h1, h2, h3 {
             margin-bottom: 0.3rem;
         }
+        .watermark {
+            position: fixed;
+            bottom: 10px;
+            right: 15px;
+            font-size: 0.75rem;
+            color: #666666;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 2px 6px;
+            border-radius: 4px;
+            z-index: 999;
+            pointer-events: none;
+        }
     </style>
+    <div class="watermark">Developed by Sagar</div>
 """, unsafe_allow_html=True)
 
 STAFF_FILE = "staff_data.json"
@@ -104,7 +117,7 @@ def get_badge_html(name, cat):
     s = styles.get(cat, "background: #333; color: #fff;")
     return f"<span style='{s} padding: 1px 4px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; display: inline-block; margin: 1px;'>{name}</span>"
 
-st.title("🌿 GH3 Labor Planner")
+st.title("🌿 GH Labor Planner")
 
 tab_assign, tab_calc, tab_staff = st.tabs([
     "📋 Roster", 
@@ -219,7 +232,7 @@ with tab_assign:
                     cat_map[cat] = []
                 cat_map[cat].append(name)
 
-    list1_text = f"GH3 ROSTER - BY CATEGORY ({gp['week_date']})\n\n"
+    list1_text = f"GH ROSTER - BY CATEGORY ({gp['week_date']})\n\n"
     for cat in ["GG", "Leading Hand", "TOTC", "Urson"]:
         members = cat_map[cat]
         if members:
@@ -231,7 +244,7 @@ with tab_assign:
 
     # --- COPY PASTE LIST 2 ---
     st.markdown("### 📱 Copy-Paste List 2: Grouped by Task (All Staff)")
-    list2_text = f"GH3 ROSTER - BY TASK ({gp['week_date']})\n\n"
+    list2_text = f"GH ROSTER - BY TASK ({gp['week_date']})\n\n"
     for task in active_tasks:
         assigned_members = st.session_state.assignments.get(task, [])
         if assigned_members:
@@ -244,7 +257,7 @@ with tab_assign:
 
     # --- COPY PASTE LIST 3 ---
     st.markdown("### 📱 Copy-Paste List 3: Urson Staff Only (By Task)")
-    list3_text = f"GH3 ROSTER - URSON ONLY ({gp['week_date']})\n\n"
+    list3_text = f"GH ROSTER - URSON ONLY ({gp['week_date']})\n\n"
     urson_has_assignments = False
     for task in active_tasks:
         assigned_members = st.session_state.assignments.get(task, [])
@@ -406,7 +419,6 @@ with tab_calc:
 
     st.markdown("---")
     
-    # Updated metrics section with Planned Hours
     col_m1, col_m2, col_m3 = st.columns(3)
     col_m1.metric("Total Staff Required (Avg)", f"{total_avg_staff_req}")
     col_m2.metric("Total Available Pool", f"{len(st.session_state.staff_list)}")
