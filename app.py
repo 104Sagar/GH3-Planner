@@ -472,7 +472,6 @@ with tab_staff:
             else:
                 st.error("Already exists!")
 
-Layout of Glasshouse Map:
     staff_to_remove = st.selectbox("Remove staff who left:", options=[""] + [s["name"] for s in st.session_state.staff_list])
     if st.button("❌ Remove Selected", type="primary"):
         if staff_to_remove:
