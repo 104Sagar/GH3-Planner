@@ -7,7 +7,7 @@ from datetime import date
 
 st.set_page_config(page_title="GH Labor Planner", layout="wide")
 
-# --- COMPACT MOBILE-FRIENDLY CSS STYLING ---
+# --- ULTRA-COMPACT MOBILE 2-COLUMN GRID STYLING ---
 st.markdown("""
     <style>
         .block-container {
@@ -41,29 +41,15 @@ st.markdown("""
             border-top: 1px solid #333;
             padding-top: 0.2rem;
         }
-        /* COMPACT BUTTON STYLING FOR MOBILE */
-        div.stButton > button {
+        /* STRICT SIDE-BY-SIDE MOBILE GRID */
+        .row-grid-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
             width: 100%;
-            border-radius: 3px;
-            padding: 2px 4px !important;
-            font-size: 0.78rem !important;
-            min-height: unset !important;
-            height: 32px;
-            border: 1px solid #444;
         }
-        /* FORCE COLUMNS TO STAY SIDE-BY-SIDE ON MOBILE (IPHONE) */
-        @media (max-width: 768px) {
-            [data-testid="column"] {
-                width: 50% !important;
-                flex: 1 1 50% !important;
-                min-width: 0 !important;
-                padding: 0 2px !important;
-            }
-            [data-testid="stHorizontalBlock"] {
-                display: flex !important;
-                flex-direction: row !important;
-                gap: 4px !important;
-            }
+        .row-column-box {
+            min-width: 0;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -252,7 +238,7 @@ with tab_assign:
         if assignments_changed:
             save_data(ASSIGNMENT_FILE, st.session_state.assignments)
 
-    # --- COPY PASTE LIST 1 ---
+    # --- COPY PASTE LISTS ---
     st.markdown("### 📱 Copy-Paste List 1: Grouped by Category")
     cat_map = {"GG": [], "Leading Hand": [], "TOTC": [], "Urson": []}
     for task, assigned_members in st.session_state.assignments.items():
@@ -273,7 +259,6 @@ with tab_assign:
             list1_text += "\n"
     st.code(list1_text, language="text")
 
-    # --- COPY PASTE LIST 2 ---
     st.markdown("### 📱 Copy-Paste List 2: Grouped by Task (All Staff)")
     list2_text = f"GH ROSTER - BY TASK ({gp['week_date']})\n\n"
     for task in active_tasks:
@@ -286,7 +271,6 @@ with tab_assign:
             list2_text += "\n"
     st.code(list2_text, language="text")
 
-    # --- COPY PASTE LIST 3 ---
     st.markdown("### 📱 Copy-Paste List 3: Urson Staff Only (By Task)")
     list3_text = f"GH ROSTER - URSON ONLY ({gp['week_date']})\n\n"
     urson_has_assignments = False
@@ -510,60 +494,70 @@ with tab_map:
     north_rows = list(range(3001, 3260, 2))
     south_rows = list(range(3002, 3261, 2))
     
-    # 2 Columns forced side-by-side on mobile via CSS
-    col_north, col_south = st.columns(2)
-    
-    map_updated = False
+    # Handle button clicks via query parameters or unique key triggers
+    clicked_row = None
+    for r in north_rows + south_rows:
+        if st.button(f"click_r_{r}", key=f"action_map_row_{r}", help=None):
+            clicked_row = str(r)
 
-    with col_north:
-        st.markdown("##### ⬆️ North Side")
-        for r in north_rows:
-            r_str = str(r)
-            status = st.session_state.map_progress[selected_track_task].get(r_str, "Unfilled")
-            
-            if status == "Finished":
-                label = f"🟢 {r}"
-            elif status == "Half Finished":
-                label = f"🟡 {r}"
-            else:
-                label = f"⚪ {r}"
-                
-            if st.button(label, key=f"row_tap_n_{selected_track_task}_{r}"):
-                if status == "Unfilled":
-                    new_status = "Half Finished"
-                elif status == "Half Finished":
-                    new_status = "Finished"
-                else:
-                    new_status = "Unfilled"
-                st.session_state.map_progress[selected_track_task][r_str] = new_status
-                map_updated = True
-
-    with col_south:
-        st.markdown("##### ⬇️ South Side")
-        for r in south_rows:
-            r_str = str(r)
-            status = st.session_state.map_progress[selected_track_task].get(r_str, "Unfilled")
-            
-            if status == "Finished":
-                label = f"🟢 {r}"
-            elif status == "Half Finished":
-                label = f"🟡 {r}"
-            else:
-                label = f"⚪ {r}"
-                
-            if st.button(label, key=f"row_tap_s_{selected_track_task}_{r}"):
-                if status == "Unfilled":
-                    new_status = "Half Finished"
-                elif status == "Half Finished":
-                    new_status = "Finished"
-                else:
-                    new_status = "Unfilled"
-                st.session_state.map_progress[selected_track_task][r_str] = new_status
-                map_updated = True
-
-    if map_updated:
+    if clicked_row:
+        curr = st.session_state.map_progress[selected_track_task].get(clicked_row, "Unfilled")
+        if curr == "Unfilled":
+            nxt = "Half Finished"
+        elif curr == "Half Finished":
+            nxt = "Finished"
+        else:
+            nxt = "Unfilled"
+        st.session_state.map_progress[selected_track_task][clicked_row] = nxt
         save_data(MAP_FILE, st.session_state.map_progress)
         st.rerun()
+
+    # Build pure CSS HTML grid to guarantee strict side-by-side display on mobile
+    def render_compact_side(rows_list, side_title):
+        html = f"<div class='row-column-box'><h5 style='text-align:center;'>{side_title}</h5>"
+        for r in rows_list:
+            r_str = str(r)
+            status = st.session_state.map_progress[selected_track_task].get(r_str, "Unfilled")
+            
+            if status == "Finished":
+                dot = "🟢"
+                bg = "#1b381e"
+                border_col = "#2e7d32"
+            elif status == "Half Finished":
+                dot = "🟡"
+                bg = "#4a3d00"
+                border_col = "#fbc02d"
+            else:
+                dot = "⚪"
+                bg = "#2b2b2b"
+                border_col = "#444"
+                
+            html += f"""
+                <form action='' method='get' style='margin-bottom: 3px;'>
+                    <button name='click_r_{r}' value='1' style='
+                        width: 100%;
+                        background: {bg};
+                        color: #fff;
+                        border: 1px solid {border_col};
+                        border-radius: 3px;
+                        padding: 4px 6px;
+                        font-size: 0.78rem;
+                        font-weight: 500;
+                        text-align: left;
+                        cursor: pointer;
+                    '>{dot} Row {r}</button>
+                </form>
+            """
+        html += "</div>"
+        return html
+
+    grid_layout_html = f"""
+        <div class='row-grid-container'>
+            {render_compact_side(north_rows, "⬆️ North Side")}
+            {render_compact_side(south_rows, "⬇️ South Side")}
+        </div>
+    """
+    st.markdown(grid_layout_html, unsafe_allow_html=True)
 
     st.markdown("---")
     if st.button("🔄 Reset All Map Progress", type="primary"):
