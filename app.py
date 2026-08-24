@@ -47,6 +47,24 @@ st.markdown("""
             border-top: 1px solid #333;
             padding-top: 0.3rem;
         }
+        .map-section {
+            background-color: #1e252b;
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid #333;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .center-path {
+            background-color: #3b3a30;
+            padding: 8px;
+            border-radius: 4px;
+            text-align: center;
+            font-weight: bold;
+            color: #ffb703;
+            margin: 8px 0;
+            border: 1px dashed #ffb703;
+        }
     </style>
 """, unsafe_allow_html=True)
 
@@ -127,10 +145,11 @@ def get_badge_html(name, cat):
 
 st.title("🌿 GH Labor Planner")
 
-tab_assign, tab_calc, tab_staff = st.tabs([
+tab_assign, tab_calc, tab_staff, tab_map = st.tabs([
     "📋 Roster", 
     "📊 Calculator", 
-    "👥 Staff Pool"
+    "👥 Staff Pool",
+    "🗺️ Greenhouse Map"
 ])
 
 gp = st.session_state.global_params
@@ -453,6 +472,7 @@ with tab_staff:
             else:
                 st.error("Already exists!")
 
+Layout of Glasshouse Map:
     staff_to_remove = st.selectbox("Remove staff who left:", options=[""] + [s["name"] for s in st.session_state.staff_list])
     if st.button("❌ Remove Selected", type="primary"):
         if staff_to_remove:
@@ -467,4 +487,29 @@ with tab_staff:
     st.markdown("---")
     df_roster = pd.DataFrame(st.session_state.staff_list)
     st.dataframe(df_roster, use_container_width=True, hide_index=True)
+    st.markdown('<div class="footer-watermark">Developed by Sagar</div>', unsafe_allow_html=True)
+
+# ==========================================
+# TAB 4: GREENHOUSE MAP
+# ==========================================
+with tab_map:
+    st.subheader("🗺️ Greenhouse Layout Map")
+    st.markdown("Visual reference showing row numbering split by the East-to-West center path.")
+    
+    st.markdown("""
+        <div class="map-section">
+            <h3 style="color: #81c784; margin-bottom: 5px;">⬆️ NORTH SIDE (ODD ROWS)</h3>
+            <p style="color: #bbb; margin-bottom: 0;">Starts from <b>3001</b> up to <b>3259</b></p>
+        </div>
+        
+        <div class="center-path">
+            ↔️ CENTER PATH (EAST TO WEST ACCESSWAY) ↔️
+        </div>
+        
+        <div class="map-section">
+            <h3 style="color: #90caf9; margin-bottom: 5px;">⬇️ SOUTH SIDE (EVEN ROWS)</h3>
+            <p style="color: #bbb; margin-bottom: 0;">Starts from <b>3002</b> up to <b>3260</b></p>
+        </div>
+    """, unsafe_allow_html=True)
+    
     st.markdown('<div class="footer-watermark">Developed by Sagar</div>', unsafe_allow_html=True)
