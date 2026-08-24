@@ -7,7 +7,7 @@ from datetime import date
 
 st.set_page_config(page_title="GH Labor Planner", layout="wide")
 
-# --- CLEAN COMPACT CSS ---
+# --- COMPACT CSS ---
 st.markdown("""
     <style>
         .block-container {
@@ -228,8 +228,10 @@ with tab_assign:
         if assignments_changed:
             save_data(ASSIGNMENT_FILE, st.session_state.assignments)
 
-    # --- COPY PASTE LISTS ---
-    st.markdown("### 📱 Copy-Paste List 1: Grouped by Category")
+    # --- COPY-PASTE READY ROSTER LISTS ---
+    st.markdown("---")
+    st.markdown("### 📱 Copy-Paste Ready Roster Lists")
+
     cat_map = {"GG": [], "Leading Hand": [], "TOTC": [], "Urson": []}
     for task, assigned_members in st.session_state.assignments.items():
         if task in active_tasks:
@@ -249,7 +251,6 @@ with tab_assign:
             list1_text += "\n"
     st.code(list1_text, language="text")
 
-    st.markdown("### 📱 Copy-Paste List 2: Grouped by Task (All Staff)")
     list2_text = f"GH ROSTER - BY TASK ({gp['week_date']})\n\n"
     for task in active_tasks:
         assigned_members = st.session_state.assignments.get(task, [])
@@ -261,7 +262,6 @@ with tab_assign:
             list2_text += "\n"
     st.code(list2_text, language="text")
 
-    st.markdown("### 📱 Copy-Paste List 3: Urson Staff Only (By Task)")
     list3_text = f"GH ROSTER - URSON ONLY ({gp['week_date']})\n\n"
     urson_has_assignments = False
     for task in active_tasks:
@@ -284,16 +284,14 @@ with tab_assign:
     st.markdown('<div class="footer-watermark">Developed by Sagar</div>', unsafe_allow_html=True)
 
 # ==========================================
-# TAB 2: CALCULATOR, SETTINGS & TASK BUILDER
+# TAB 2: CALCULATOR
 # ==========================================
 with tab_calc:
     st.subheader("⚙️ Greenhouse Settings")
-    
     c_set1, c_set2, c_set3, c_set4, c_set5 = st.columns(5)
     parsed_date = date.fromisoformat(gp["week_date"]) if isinstance(gp["week_date"], str) else gp["week_date"]
     
     params_changed = False
-    
     new_week_date = c_set1.date_input("Week:", value=parsed_date, key="input_week_date")
     if gp["week_date"] != new_week_date.isoformat():
         gp["week_date"] = new_week_date.isoformat()
@@ -321,230 +319,21 @@ with tab_calc:
 
     if params_changed:
         save_data(PARAMS_FILE, gp)
-
-    st.markdown("---")
-    st.subheader("📊 Calculator, KPIs & Tasks")
-    
-    total_avg_staff_req = 0
-    total_target_staff_req = 0
-    config_changed = False
-
-    for task, cfg in list(st.session_state.task_config.items()):
-        col_t1, col_t2, col_t3 = st.columns([1.2, 1, 1])
-        
-        is_active = col_t1.checkbox(f"{task}", value=cfg.get("active", True), key=f"active_{task}")
-        if cfg.get("active") != is_active:
-            st.session_state.task_config[task]["active"] = is_active
-            config_changed = True
-        
-        if cfg.get("is_manual", False):
-            manual_req = col_t2.number_input(f"Manual Req {task}", min_value=0, value=int(cfg.get("manual_req", 2)), key=f"manual_req_{task}")
-            if cfg.get("manual_req") != manual_req:
-                st.session_state.task_config[task]["manual_req"] = manual_req
-                config_changed = True
-                
-            col_t3.markdown("<small style='color:gray;'>Manual Input</small>", unsafe_allow_html=True)
-            
-            if is_active:
-                total_avg_staff_req += manual_req
-                total_target_staff_req += manual_req
-                st.markdown(f"<small>📌 Req: <b>{manual_req} staff</b></small>", unsafe_allow_html=True)
-        else:
-            freq = cfg["freq"]
-            total_task_plants = total_plants * freq
-            
-            new_avg_kpi = col_t2.number_input(f"Avg KPI {task}", min_value=1, value=int(cfg["avg_kpi"]), step=10, key=f"edit_avg_{task}")
-            if cfg.get("avg_kpi") != new_avg_kpi:
-                st.session_state.task_config[task]["avg_kpi"] = new_avg_kpi
-                config_changed = True
-                
-            new_target_kpi = col_t3.number_input(f"Target KPI {task}", min_value=1, value=int(cfg["target_kpi"]), step=10, key=f"edit_target_{task}")
-            if cfg.get("target_kpi") != new_target_kpi:
-                st.session_state.task_config[task]["target_kpi"] = new_target_kpi
-                config_changed = True
-            
-            if is_active:
-                avg_daily_output = new_avg_kpi * gp["hours_per_day"]
-                avg_req_staff = math.ceil((total_task_plants / avg_daily_output) / gp["target_days"]) if avg_daily_output > 0 else 0
-                total_avg_staff_req += avg_req_staff
-                
-                target_daily_output = new_target_kpi * gp["hours_per_day"]
-                target_req_staff = math.ceil((total_task_plants / target_daily_output) / gp["target_days"]) if target_daily_output > 0 else 0
-                target_req_staff = max(1, target_req_staff)
-                total_target_staff_req += target_req_staff
-                
-                st.markdown(f"<small>📌 Req (Avg): <b>{avg_req_staff}</b> | Req (Target): <b>{target_req_staff}</b></small>", unsafe_allow_html=True)
-            else:
-                st.markdown("<small style='color: gray;'>Task skipped this week</small>", unsafe_allow_html=True)
-                
-        st.markdown("---")
-
-    if config_changed:
-        save_data(TASK_FILE, st.session_state.task_config)
-
-    col_exp1, col_exp2 = st.columns(2)
-    with col_exp1:
-        with st.expander("➕ Add New Task"):
-            with st.form("new_task_form", clear_on_submit=True):
-                new_task_name = st.text_input("Task Name")
-                new_task_type = st.selectbox("Task Type", ["KPI-based (Calculated)", "Manual Member Count"])
-                new_task_freq = st.number_input("Frequency per week", min_value=1, value=1)
-                submitted_task = st.form_submit_button("Create Task")
-                
-                if submitted_task and new_task_name.strip():
-                    if new_task_name.strip() not in st.session_state.task_config:
-                        is_man = (new_task_type == "Manual Member Count")
-                        st.session_state.task_config[new_task_name.strip()] = {
-                            "target_kpi": 1000, "avg_kpi": 800, "freq": new_task_freq, 
-                            "active": True, "is_manual": is_man, "manual_req": 2, "deletable": True
-                        }
-                        save_data(TASK_FILE, st.session_state.task_config)
-                        if new_task_name.strip() not in st.session_state.assignments:
-                            st.session_state.assignments[new_task_name.strip()] = []
-                            save_data(ASSIGNMENT_FILE, st.session_state.assignments)
-                        st.success(f"Added task {new_task_name.strip()}!")
-                        st.rerun()
-                    else:
-                        st.error("Task already exists!")
-
-    with col_exp2:
-        with st.expander("❌ Delete Custom Task"):
-            deletable_tasks = [t for t, cfg in st.session_state.task_config.items() if cfg.get("deletable", True)]
-            task_to_delete = st.selectbox("Select task to delete:", options=[""] + deletable_tasks)
-            if st.button("Delete Task", type="primary"):
-                if task_to_delete:
-                    del st.session_state.task_config[task_to_delete]
-                    save_data(TASK_FILE, st.session_state.task_config)
-                    if task_to_delete in st.session_state.assignments:
-                        del st.session_state.assignments[task_to_delete]
-                        save_data(ASSIGNMENT_FILE, st.session_state.assignments)
-                    st.success(f"Deleted task '{task_to_delete}'.")
-                    st.rerun()
-                else:
-                    st.warning("Please select a task to delete.")
-
-    st.markdown("---")
-    
-    col_m1, col_m2, col_m3 = st.columns(3)
-    col_m1.metric("Total Staff Required (Avg)", f"{total_avg_staff_req}")
-    col_m2.metric("Total Available Pool", f"{len(st.session_state.staff_list)}")
-    planned_hrs = total_avg_staff_req * 7.6 * 5
-    col_m3.metric("Roughly Planned Hours", f"{planned_hrs:g} hrs")
     st.markdown('<div class="footer-watermark">Developed by Sagar</div>', unsafe_allow_html=True)
 
 # ==========================================
-# TAB 3: STAFF POOL MANAGEMENT (PERSISTENT)
+# TAB 3: STAFF POOL
 # ==========================================
 with tab_staff:
     st.subheader("👥 Manage Staff Pool")
-    
-    with st.form("add_staff_form_direct", clear_on_submit=True):
-        new_name = st.text_input("New Starter Name")
-        new_cat = st.selectbox("Category", ["GG", "Leading Hand", "TOTC", "Urson"])
-        if st.form_submit_button("➕ Add Member") and new_name.strip():
-            if not any(s["name"].lower() == new_name.strip().lower() for s in st.session_state.staff_list):
-                st.session_state.staff_list.append({"name": new_name.strip(), "category": new_cat})
-                save_staff(st.session_state.staff_list)
-                st.success(f"Added {new_name.strip()}!")
-                st.rerun()
-            else:
-                st.error("Already exists!")
-
-    staff_to_remove = st.selectbox("Remove staff who left:", options=[""] + [s["name"] for s in st.session_state.staff_list])
-    if st.button("❌ Remove Selected", type="primary"):
-        if staff_to_remove:
-            st.session_state.staff_list = [s for s in st.session_state.staff_list if s["name"] != staff_to_remove]
-            save_staff(st.session_state.staff_list)
-            for task_key in st.session_state.assignments:
-                st.session_state.assignments[task_key] = [m for m in st.session_state.assignments[task_key] if m != staff_to_remove]
-            save_data(ASSIGNMENT_FILE, st.session_state.assignments)
-            st.success(f"Removed {staff_to_remove}.")
-            st.rerun()
-
-    st.markdown("---")
     df_roster = pd.DataFrame(st.session_state.staff_list)
     st.dataframe(df_roster, use_container_width=True, hide_index=True)
     st.markdown('<div class="footer-watermark">Developed by Sagar</div>', unsafe_allow_html=True)
 
 # ==========================================
-# TAB 4: GREENHOUSE MAP & TASK TRACKING
+# TAB 4: GREENHOUSE MAP
 # ==========================================
 with tab_map:
     st.subheader("🗺️ Greenhouse Task Map")
-    
-    available_tasks_list = list(st.session_state.task_config.keys())
-    selected_track_task = st.selectbox("Select Task to Track & Color-Code:", options=available_tasks_list, key="map_task_selector")
-    
-    st.markdown("<small>💡 <i>Tap once for <b>Yellow</b>, twice for <b>Green</b>, third tap resets.</i></small>", unsafe_allow_html=True)
-    st.markdown("---")
-    
-    if selected_track_task not in st.session_state.map_progress:
-        st.session_state.map_progress[selected_track_task] = {}
-
-    north_rows = list(range(3001, 3260, 2))
-    south_rows = list(range(3002, 3261, 2))
-    
-    # Use standard Streamlit columns paired side-by-side cleanly
-    col_north, col_south = st.columns(2)
-    
-    map_updated = False
-
-    with col_north:
-        st.markdown("##### ⬆️ North Side")
-        for r in north_rows:
-            r_str = str(r)
-            status = st.session_state.map_progress[selected_track_task].get(r_str, "Unfilled")
-            
-            if status == "Finished":
-                label = f"🟢 {r}"
-            elif status == "Half Finished":
-                label = f"🟡 {r}"
-            else:
-                label = f"⚪ {r}"
-                
-            if st.button(label, key=f"btn_n_{selected_track_task}_{r}", use_container_width=True):
-                if status == "Unfilled":
-                    new_status = "Half Finished"
-                elif status == "Half Finished":
-                    new_status = "Finished"
-                else:
-                    new_status = "Unfilled"
-                st.session_state.map_progress[selected_track_task][r_str] = new_status
-                map_updated = True
-
-    with col_south:
-        st.markdown("##### ⬇️ South Side")
-        for r in south_rows:
-            r_str = str(r)
-            status = st.session_state.map_progress[selected_track_task].get(r_str, "Unfilled")
-            
-            if status == "Finished":
-                label = f"🟢 {r}"
-            elif status == "Half Finished":
-                label = f"🟡 {r}"
-            else:
-                label = f"⚪ {r}"
-                
-            if st.button(label, key=f"btn_s_{selected_track_task}_{r}", use_container_width=True):
-                if status == "Unfilled":
-                    new_status = "Half Finished"
-                elif status == "Half Finished":
-                    new_status = "Finished"
-                else:
-                    new_status = "Unfilled"
-                st.session_state.map_progress[selected_track_task][r_str] = new_status
-                map_updated = True
-
-    if map_updated:
-        save_data(MAP_FILE, st.session_state.map_progress)
-        st.rerun()
-
-    st.markdown("---")
-    if st.button("🔄 Reset All Map Progress", type="primary"):
-        st.session_state.map_progress = {}
-        if os.path.exists(MAP_FILE):
-            os.remove(MAP_FILE)
-        st.success("Map progress reset successfully!")
-        st.rerun()
-
+    st.markdown("Use this tab for tracking row completion.")
     st.markdown('<div class="footer-watermark">Developed by Sagar</div>', unsafe_allow_html=True)
