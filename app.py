@@ -125,14 +125,13 @@ def get_badge_html(name, cat):
 
 st.title("🌿 GH Labor Planner")
 
-# Add Tabs 5 and 6
-tab_assign, tab_calc, tab_staff, tab_map, tab_opt1, tab_opt2 = st.tabs([
+# Added Tab 5 for your new Tap-to-Assign concept
+tab_assign, tab_calc, tab_staff, tab_map, tab_tap = st.tabs([
     "📋 Roster", 
     "📊 Calculator", 
     "👥 Staff Pool",
     "🗺️ Greenhouse Map",
-    "🧪 Opt 1 (Task Cards)",
-    "🧪 Opt 2 (Staff Grid)"
+    "⚡ Tap-to-Assign"
 ])
 
 gp = st.session_state.global_params
@@ -161,7 +160,7 @@ for t in st.session_state.task_config:
         st.session_state.assignments[t] = []
 
 # ==========================================
-# TAB 1: ROSTER & ASSIGNMENTS
+# TAB 1: ROSTER & ASSIGNMENTS + COPY-PASTE LISTS
 # ==========================================
 with tab_assign:
     task_requirements_display = {}
@@ -231,6 +230,58 @@ with tab_assign:
         if assignments_changed:
             save_data(ASSIGNMENT_FILE, st.session_state.assignments)
 
+    st.markdown("---")
+    st.markdown("### 📱 Copy-Paste Ready Roster Lists")
+
+    cat_map = {"GG": [], "Leading Hand": [], "TOTC": [], "Urson": []}
+    for task, assigned_members in st.session_state.assignments.items():
+        if task in active_tasks:
+            for name in assigned_members:
+                cat = next((s["category"] for s in st.session_state.staff_list if s["name"] == name), "Other")
+                if cat not in cat_map:
+                    cat_map[cat] = []
+                cat_map[cat].append(name)
+
+    list1_text = f"GH ROSTER - BY CATEGORY ({gp['week_date']})\n\n"
+    for cat in ["GG", "Leading Hand", "TOTC", "Urson"]:
+        members = cat_map[cat]
+        if members:
+            list1_text += f"*{cat.upper()}*\n"
+            for idx, name in enumerate(members, 1):
+                list1_text += f"{idx}. {name}\n"
+            list1_text += "\n"
+    st.code(list1_text, language="text")
+
+    list2_text = f"GH ROSTER - BY TASK ({gp['week_date']})\n\n"
+    for task in active_tasks:
+        assigned_members = st.session_state.assignments.get(task, [])
+        if assigned_members:
+            list2_text += f"*{task.upper()}*\n"
+            for idx, name in enumerate(assigned_members, 1):
+                cat = next((s["category"] for s in st.session_state.staff_list if s["name"] == name), "Staff")
+                list2_text += f"{idx}. {name} ({cat})\n"
+            list2_text += "\n"
+    st.code(list2_text, language="text")
+
+    list3_text = f"GH ROSTER - URSON ONLY ({gp['week_date']})\n\n"
+    urson_has_assignments = False
+    for task in active_tasks:
+        assigned_members = st.session_state.assignments.get(task, [])
+        urson_members = [
+            m for m in assigned_members 
+            if next((s["category"] for s in st.session_state.staff_list if s["name"] == m), "") == "Urson"
+        ]
+        if urson_members:
+            urson_has_assignments = True
+            list3_text += f"*{task.upper()}*\n"
+            for idx, name in enumerate(urson_members, 1):
+                list3_text += f"{idx}. {name} (Urson)\n"
+            list3_text += "\n"
+    
+    if not urson_has_assignments:
+        list3_text += "No Urson staff assigned to tasks yet.\n"
+        
+    st.code(list3_text, language="text")
     st.markdown('<div class="footer-watermark">Developed by Sagar</div>', unsafe_allow_html=True)
 
 # ==========================================
@@ -281,7 +332,7 @@ with tab_staff:
     st.markdown('<div class="footer-watermark">Developed by Sagar</div>', unsafe_allow_html=True)
 
 # ==========================================
-# TAB 4: MAP
+# TAB 4: GREENHOUSE MAP
 # ==========================================
 with tab_map:
     st.subheader("🗺️ Greenhouse Task Map")
@@ -289,113 +340,78 @@ with tab_map:
     st.markdown('<div class="footer-watermark">Developed by Sagar</div>', unsafe_allow_html=True)
 
 # ==========================================
-# TAB 5: OPTION 1 - TASK CARDS & CHECKBOXES
+# TAB 5: TAP-TO-ASSIGN CONTROL BOARD
 # ==========================================
-with tab_opt1:
-    st.subheader("🧪 Option 1: Task Cards Control Board")
-    st.markdown("<small>💡 <i>Each task is a card. Check or uncheck staff directly into tasks with real-time requirement indicators.</i></small>", unsafe_allow_html=True)
+with tab_tap:
+    st.subheader("⚡ Tap-to-Assign Control Board")
+    st.markdown("<small>💡 <i>Select a task first, then simply tap staff names from the pool below to assign or unassign them instantly!</i></small>", unsafe_allow_html=True)
     st.markdown("---")
 
-    opt1_changed = False
-    all_staff_names = [s["name"] for s in st.session_state.staff_list]
+    # Task selector dropdown
+    selected_target_task = st.selectbox("Select Task to Assign Workers To:", options=list(active_tasks.keys()), key="tap_task_select")
+    
+    current_task_assigned = st.session_state.assignments.get(selected_target_task, [])
+    
+    # Calculate required staff for context
+    cfg = active_tasks[selected_target_task]
+    if cfg.get("is_manual", False):
+        req_cnt = cfg.get("manual_req", 1)
+    else:
+        tot_p = total_plants * cfg["freq"]
+        out_p = cfg["avg_kpi"] * gp["hours_per_day"]
+        mand = tot_p / out_p if out_p > 0 else 0
+        req_cnt = math.ceil(mand / gp["target_days"])
 
-    for task, cfg in active_tasks.items():
-        if cfg.get("is_manual", False):
-            req_cnt = cfg.get("manual_req", 1)
-        else:
-            tot_p = total_plants * cfg["freq"]
-            out_p = cfg["avg_kpi"] * gp["hours_per_day"]
-            mand = tot_p / out_p if out_p > 0 else 0
-            req_cnt = math.ceil(mand / gp["target_days"])
-
-        current_assigned = st.session_state.assignments.get(task, [])
-        
-        with st.container(border=True):
-            st.markdown(f"#### 📌 {task} (Target Req: **{req_cnt}**)")
-            
-            # Let's organize checkboxes by category inside expanders or columns for clarity
-            selected_for_this_task = []
-            
-            for cat in ["GG", "Leading Hand", "TOTC", "Urson"]:
-                cat_members = [s["name"] for s in st.session_state.staff_list if s["category"] == cat]
-                if cat_members:
-                    st.markdown(f"**{cat}**")
-                    cols = st.columns(3)
-                    for idx, member in enumerate(cat_members):
-                        c_target = cols[idx % 3]
-                        is_checked = member in current_assigned
-                        # Check if member is assigned elsewhere
-                        assigned_elsewhere = any(member in st.session_state.assignments.get(other_t, []) for other_t in active_tasks if other_t != task)
-                        
-                        label_suffix = " (Assigned elsewhere)" if assigned_elsewhere and not is_checked else ""
-                        
-                        checked = c_target.checkbox(f"{member}{label_suffix}", value=is_checked, key=f"opt1_{task}_{member}")
-                        if checked:
-                            selected_for_this_task.append(member)
-
-            if st.session_state.assignments.get(task, []) != selected_for_this_task:
-                st.session_state.assignments[task] = selected_for_this_task
-                opt1_changed = True
-
-            diff = len(selected_for_this_task) - req_cnt
-            if diff == 0:
-                st.markdown(f"<small style='color: #4e9f3d;'>✅ Exactly {len(selected_for_this_task)} assigned</small>", unsafe_allow_html=True)
-            elif diff > 0:
-                st.markdown(f"<small style='color: #ffb703;'>⚠️ +{diff} over target</small>", unsafe_allow_html=True)
-            else:
-                st.markdown(f"<small style='color: #ff6b6b;'>❌ Need {abs(diff)} more workers</small>", unsafe_allow_html=True)
-
-    if opt1_changed:
-        save_data(ASSIGNMENT_FILE, st.session_state.assignments)
-
-    st.markdown('<div class="footer-watermark">Developed by Sagar</div>', unsafe_allow_html=True)
-
-# ==========================================
-# TAB 6: OPTION 2 - STAFF-FIRST DROPDOWN GRID
-# ==========================================
-with tab_opt2:
-    st.subheader("🧪 Option 2: Staff-First Dropdown Grid")
-    st.markdown("<small>💡 <i>Go down your staff roster person by person and select their exact task assignment from a dropdown menu.</i></small>", unsafe_allow_html=True)
+    st.markdown(f"**Currently assigned to {selected_target_task}:** {len(current_task_assigned)} workers (Target Needed: **{req_cnt}**)")
     st.markdown("---")
 
-    task_options = ["(Unassigned)"] + list(active_tasks.keys())
-    opt2_assignments = {t: [] for t in active_tasks.keys()}
-    opt2_changed = False
+    tap_updated = False
 
-    # Group by category for clean readability
+    # Display staff grouped by category with interactive toggle buttons
     for cat in ["GG", "Leading Hand", "TOTC", "Urson"]:
         cat_staff = [s for s in st.session_state.staff_list if s["category"] == cat]
         if cat_staff:
-            st.markdown(f"### {get_category_color(cat)}")
-            for staff in cat_staff:
-                s_name = staff["name"]
+            st.markdown(f"**{get_category_color(cat)}**")
+            cols = st.columns(3)
+            for idx, staff in enumerate(cat_staff):
+                name = staff["name"]
+                c_target = cols[idx % 3]
                 
-                # Find current task for this staff member
-                curr_task = "(Unassigned)"
+                # Check status
+                is_in_task = name in current_task_assigned
+                # Check if assigned to another task
+                assigned_elsewhere = ""
                 for t, members in st.session_state.assignments.items():
-                    if s_name in members:
-                        curr_task = t
+                    if name in members and t != selected_target_task:
+                        assigned_elsewhere = f" (in {t})"
                         break
-                
-                if curr_task not in task_options:
-                    curr_task = "(Unassigned)"
-                
-                selected_task = st.selectbox(
-                    f"**{s_name}**",
-                    options=task_options,
-                    index=task_options.index(curr_task),
-                    key=f"opt2_staff_{s_name}"
-                )
-                
-                if selected_task != "(Unassigned)":
-                    opt2_assignments[selected_task].append(s_name)
-            
+
+                # Button label with status icon
+                if is_in_task:
+                    btn_label = f"✅ {name}"
+                elif assigned_elsewhere:
+                    btn_label = f"📌 {name}{assigned_elsewhere}"
+                else:
+                    btn_label = f"➕ {name}"
+
+                if c_target.button(btn_label, key=f"tap_btn_{selected_target_task}_{name}", use_container_width=True):
+                    if is_in_task:
+                        # Remove from task
+                        current_task_assigned.remove(name)
+                    else:
+                        # Add to task (and remove from any other task to avoid duplicates)
+                        for t in st.session_state.assignments:
+                            if name in st.session_state.assignments[t]:
+                                st.session_state.assignments[t].remove(name)
+                        current_task_assigned.append(name)
+                    
+                    st.session_state.assignments[selected_target_task] = current_task_assigned
+                    tap_updated = True
+
             st.markdown("---")
 
-    if st.button("💾 Save Option 2 Assignments", type="primary"):
-        st.session_state.assignments = opt2_assignments
+    if tap_updated:
         save_data(ASSIGNMENT_FILE, st.session_state.assignments)
-        st.success("Successfully saved Option 2 assignments!")
         st.rerun()
 
     st.markdown('<div class="footer-watermark">Developed by Sagar</div>', unsafe_allow_html=True)
