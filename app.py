@@ -405,8 +405,13 @@ with tab_calc:
                     st.warning("Please select a task to delete.")
 
     st.markdown("---")
-    st.metric("Total Staff Required (Avg)", f"{total_avg_staff_req}")
-    st.metric("Total Available Pool", f"{len(st.session_state.staff_list)}")
+    
+    # Updated metrics section with Planned Hours
+    col_m1, col_m2, col_m3 = st.columns(3)
+    col_m1.metric("Total Staff Required (Avg)", f"{total_avg_staff_req}")
+    col_m2.metric("Total Available Pool", f"{len(st.session_state.staff_list)}")
+    planned_hrs = total_avg_staff_req * 7.6 * 5
+    col_m3.metric("Roughly Planned Hours", f"{planned_hrs:g} hrs")
 
 # ==========================================
 # TAB 3: STAFF POOL MANAGEMENT (PERSISTENT)
