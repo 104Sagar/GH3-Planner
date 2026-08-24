@@ -1,18 +1,37 @@
 import math
+import json
+import os
 import streamlit as st
 import pandas as pd
 from datetime import date
 
 st.set_page_config(page_title="GH3 Roster & Allocation Planner", layout="wide")
 
-# --- INITIALIZE SESSION STATE ---
+# --- FILE STORAGE FOR PERSISTENT STAFF POOL ---
+STAFF_FILE = "staff_data.json"
+
+DEFAULT_STAFF = [
+    {"name": "Marie", "category": "GG"}, {"name": "Kid", "category": "GG"}, {"name": "Ting", "category": "GG"}, {"name": "Tommy", "category": "GG"}, {"name": "Risa", "category": "GG"},
+    {"name": "Rebecca", "category": "Leading Hand"}, {"name": "Rene", "category": "Leading Hand"}, {"name": "Tico", "category": "Leading Hand"},
+    {"name": "Alfredo", "category": "TOTC"}, {"name": "Enock", "category": "TOTC"}, {"name": "Dick", "category": "TOTC"}, {"name": "Dan", "category": "TOTC"}, {"name": "Will", "category": "TOTC"}, {"name": "Terry", "category": "TOTC"},
+    {"name": "Nikki", "category": "Urson"}, {"name": "Bina", "category": "Urson"}, {"name": "Tiara", "category": "Urson"}, {"name": "Shisir", "category": "Urson"}, {"name": "Jimmy", "category": "Urson"}, {"name": "Chandra", "category": "Urson"}, {"name": "Malick", "category": "Urson"}, {"name": "Audrey", "category": "Urson"}, {"name": "Han", "category": "Urson"}, {"name": "Rosie", "category": "Urson"}, {"name": "Dhia", "category": "Urson"}, {"name": "Hui", "category": "Urson"}, {"name": "Erica", "category": "Urson"}, {"name": "Lin", "category": "Urson"}, {"name": "Moka", "category": "Urson"}, {"name": "Panyawat", "category": "Urson"}, {"name": "AkashDeep", "category": "Urson"}, {"name": "Zakia", "category": "Urson"}, {"name": "Supakit", "category": "Urson"}, {"name": "Camie", "category": "Urson"}, {"name": "Fierda", "category": "Urson"}, {"name": "Luoyan liu", "category": "Urson"}, {"name": "Fikki", "category": "Urson"},
+]
+
+def load_staff():
+    if os.path.exists(STAFF_FILE):
+        try:
+            with open(STAFF_FILE, "r") as f:
+                return json.load(f)
+        except:
+            return DEFAULT_STAFF
+    return DEFAULT_STAFF
+
+def save_staff(staff_list):
+    with open(STAFF_FILE, "w") as f:
+        json.dump(staff_list, f)
+
 if "staff_list" not in st.session_state:
-    st.session_state.staff_list = [
-        {"name": "Marie", "category": "GG"}, {"name": "Kid", "category": "GG"}, {"name": "Ting", "category": "GG"}, {"name": "Tommy", "category": "GG"}, {"name": "Risa", "category": "GG"},
-        {"name": "Rebecca", "category": "Leading Hand"}, {"name": "Rene", "category": "Leading Hand"}, {"name": "Tico", "category": "Leading Hand"},
-        {"name": "Alfredo", "category": "TOTC"}, {"name": "Enock", "category": "TOTC"}, {"name": "Dick", "category": "TOTC"}, {"name": "Dan", "category": "TOTC"}, {"name": "Will", "category": "TOTC"}, {"name": "Terry", "category": "TOTC"},
-        {"name": "Nikki", "category": "Urson"}, {"name": "Bina", "category": "Urson"}, {"name": "Tiara", "category": "Urson"}, {"name": "Shisir", "category": "Urson"}, {"name": "Jimmy", "category": "Urson"}, {"name": "Chandra", "category": "Urson"}, {"name": "Malick", "category": "Urson"}, {"name": "Audrey", "category": "Urson"}, {"name": "Han", "category": "Urson"}, {"name": "Rosie", "category": "Urson"}, {"name": "Dhia", "category": "Urson"}, {"name": "Hui", "category": "Urson"}, {"name": "Erica", "category": "Urson"}, {"name": "Lin", "category": "Urson"}, {"name": "Moka", "category": "Urson"}, {"name": "Panyawat", "category": "Urson"}, {"name": "AkashDeep", "category": "Urson"}, {"name": "Zakia", "category": "Urson"}, {"name": "Supakit", "category": "Urson"}, {"name": "Camie", "category": "Urson"}, {"name": "Fierda", "category": "Urson"}, {"name": "Luoyan liu", "category": "Urson"}, {"name": "Fikki", "category": "Urson"},
-    ]
+    st.session_state.staff_list = load_staff()
 
 if "task_config" not in st.session_state:
     st.session_state.task_config = {
@@ -27,7 +46,6 @@ if "task_config" not in st.session_state:
 if "assignments" not in st.session_state:
     st.session_state.assignments = {task: [] for task in st.session_state.task_config.keys()}
 
-# Persistent global parameters stored in session state so tabs can share them
 if "global_params" not in st.session_state:
     st.session_state.global_params = {
         "week_date": date.today(),
@@ -64,7 +82,6 @@ tab_assign, tab_calc, tab_staff = st.tabs([
     "👥 Staff Pool"
 ])
 
-# Grab current parameters for calculations
 gp = st.session_state.global_params
 total_plants = gp["total_rows"] * gp["plants_per_row"]
 active_tasks = {task: cfg for task, cfg in st.session_state.task_config.items() if cfg.get("active", True)}
@@ -205,7 +222,7 @@ with tab_calc:
     st.metric("Total Available Pool", f"{len(st.session_state.staff_list)}")
 
 # ==========================================
-# TAB 3: STAFF POOL MANAGEMENT
+# TAB 3: STAFF POOL MANAGEMENT (PERSISTENT)
 # ==========================================
 with tab_staff:
     st.subheader("👥 Manage Staff Pool")
@@ -216,6 +233,7 @@ with tab_staff:
         if st.form_submit_button("➕ Add Member") and new_name.strip():
             if not any(s["name"].lower() == new_name.strip().lower() for s in st.session_state.staff_list):
                 st.session_state.staff_list.append({"name": new_name.strip(), "category": new_cat})
+                save_staff(st.session_state.staff_list) # Save permanently to file
                 st.success(f"Added {new_name.strip()}!")
                 st.rerun()
             else:
@@ -225,6 +243,7 @@ with tab_staff:
     if st.button("❌ Remove Selected", type="primary"):
         if staff_to_remove:
             st.session_state.staff_list = [s for s in st.session_state.staff_list if s["name"] != staff_to_remove]
+            save_staff(st.session_state.staff_list) # Save permanently to file
             for task_key in st.session_state.assignments:
                 st.session_state.assignments[task_key] = [m for m in st.session_state.assignments[task_key] if m != staff_to_remove]
             st.success(f"Removed {staff_to_remove}.")
