@@ -326,6 +326,31 @@ with tab_calc:
 # ==========================================
 with tab_staff:
     st.subheader("👥 Manage Staff Pool")
+    
+    with st.form("add_staff_form_direct", clear_on_submit=True):
+        new_name = st.text_input("New Starter Name")
+        new_cat = st.selectbox("Category", ["GG", "Leading Hand", "TOTC", "Urson"])
+        if st.form_submit_button("➕ Add Member") and new_name.strip():
+            if not any(s["name"].lower() == new_name.strip().lower() for s in st.session_state.staff_list):
+                st.session_state.staff_list.append({"name": new_name.strip(), "category": new_cat})
+                save_data(STAFF_FILE, st.session_state.staff_list)
+                st.success(f"Added {new_name.strip()}!")
+                st.rerun()
+            else:
+                st.error("Already exists!")
+
+    staff_to_remove = st.selectbox("Remove staff who left:", options=[""] + [s["name"] for s in st.session_state.staff_list])
+    if st.button("❌ Remove Selected", type="primary"):
+        if staff_to_remove:
+            st.session_state.staff_list = [s for s in st.session_state.staff_list if s["name"] != staff_to_remove]
+            save_data(STAFF_FILE, st.session_state.staff_list)
+            for task_key in st.session_state.assignments:
+                st.session_state.assignments[task_key] = [m for m in st.session_state.assignments[task_key] if m != staff_to_remove]
+            save_data(ASSIGNMENT_FILE, st.session_state.assignments)
+            st.success(f"Removed {staff_to_remove}.")
+            st.rerun()
+
+    st.markdown("---")
     df_roster = pd.DataFrame(st.session_state.staff_list)
     st.dataframe(df_roster, use_container_width=True, hide_index=True)
     st.markdown('<div class="footer-watermark">Developed by Sagar</div>', unsafe_allow_html=True)
