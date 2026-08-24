@@ -58,13 +58,6 @@ st.markdown("""
             border: 2px dashed #ffb703;
             letter-spacing: 1px;
         }
-        .bay-container {
-            display: flex;
-            overflow-x: auto;
-            gap: 6px;
-            padding-bottom: 5px;
-            margin-bottom: 5px;
-        }
     </style>
 """, unsafe_allow_html=True)
 
@@ -500,11 +493,11 @@ with tab_map:
     if "map_bay" not in st.session_state:
         st.session_state.map_bay = 1
 
-    # --- NORTH SIDE MAP (BAYS 1 to 26 in a single horizontal line) ---
+    # --- NORTH SIDE MAP (BAYS 1 to 26 without 'B') ---
     st.markdown("##### ⬆️ NORTH SIDE (Odd Rows: 3001 – 3259)")
     north_cols = st.columns(26)
     for b in range(1, 27):
-        if north_cols[b-1].button(f"B{b}", key=f"map_n_{b}"):
+        if north_cols[b-1].button(f"{b}", key=f"map_n_{b}"):
             st.session_state.map_side = "North"
             st.session_state.map_bay = b
 
@@ -514,11 +507,11 @@ with tab_map:
         unsafe_allow_html=True
     )
 
-    # --- SOUTH SIDE MAP (BAYS 1 to 26 in a single horizontal line) ---
+    # --- SOUTH SIDE MAP (BAYS 1 to 26 without 'B') ---
     st.markdown("##### ⬇️ SOUTH SIDE (Even Rows: 3002 – 3260)")
     south_cols = st.columns(26)
     for b in range(1, 27):
-        if south_cols[b-1].button(f"B{b}", key=f"map_s_{b}"):
+        if south_cols[b-1].button(f"{b}", key=f"map_s_{b}"):
             st.session_state.map_side = "South"
             st.session_state.map_bay = b
 
