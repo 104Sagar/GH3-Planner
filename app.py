@@ -8,50 +8,10 @@ st.set_page_config(page_title="GH3 Roster & Allocation Planner", layout="wide")
 # --- INITIALIZE SESSION STATE ---
 if "staff_list" not in st.session_state:
     st.session_state.staff_list = [
-        # GG (5)
-        {"name": "Marie", "category": "GG"},
-        {"name": "Kid", "category": "GG"},
-        {"name": "Ting", "category": "GG"},
-        {"name": "Tommy", "category": "GG"},
-        {"name": "Risa", "category": "GG"},
-        
-        # Leading Hand (3)
-        {"name": "Rebecca", "category": "Leading Hand"},
-        {"name": "Rene", "category": "Leading Hand"},
-        {"name": "Tico", "category": "Leading Hand"},
-        
-        # TOTC (6)
-        {"name": "Alfredo", "category": "TOTC"},
-        {"name": "Enock", "category": "TOTC"},
-        {"name": "Dick", "category": "TOTC"},
-        {"name": "Dan", "category": "TOTC"},
-        {"name": "Will", "category": "TOTC"},
-        {"name": "Terry", "category": "TOTC"},
-        
-        # Urson (23)
-        {"name": "Nikki", "category": "Urson"},
-        {"name": "Bina", "category": "Urson"}, 
-        {"name": "Tiara", "category": "Urson"},
-        {"name": "Shisir", "category": "Urson"},
-        {"name": "Jimmy", "category": "Urson"},
-        {"name": "Chandra", "category": "Urson"},
-        {"name": "Malick", "category": "Urson"},
-        {"name": "Audrey", "category": "Urson"},
-        {"name": "Han", "category": "Urson"},
-        {"name": "Rosie", "category": "Urson"},
-        {"name": "Dhia", "category": "Urson"},
-        {"name": "Hui", "category": "Urson"}, 
-        {"name": "Erica", "category": "Urson"},
-        {"name": "Lin", "category": "Urson"},
-        {"name": "Moka", "category": "Urson"},
-        {"name": "Panyawat", "category": "Urson"},
-        {"name": "AkashDeep", "category": "Urson"},
-        {"name": "Zakia", "category": "Urson"},
-        {"name": "Supakit", "category": "Urson"},
-        {"name": "Camie", "category": "Urson"},
-        {"name": "Fierda", "category": "Urson"},
-        {"name": "Luoyan liu", "category": "Urson"},
-        {"name": "Fikki", "category": "Urson"},
+        {"name": "Marie", "category": "GG"}, {"name": "Kid", "category": "GG"}, {"name": "Ting", "category": "GG"}, {"name": "Tommy", "category": "GG"}, {"name": "Risa", "category": "GG"},
+        {"name": "Rebecca", "category": "Leading Hand"}, {"name": "Rene", "category": "Leading Hand"}, {"name": "Tico", "category": "Leading Hand"},
+        {"name": "Alfredo", "category": "TOTC"}, {"name": "Enock", "category": "TOTC"}, {"name": "Dick", "category": "TOTC"}, {"name": "Dan", "category": "TOTC"}, {"name": "Will", "category": "TOTC"}, {"name": "Terry", "category": "TOTC"},
+        {"name": "Nikki", "category": "Urson"}, {"name": "Bina", "category": "Urson"}, {"name": "Tiara", "category": "Urson"}, {"name": "Shisir", "category": "Urson"}, {"name": "Jimmy", "category": "Urson"}, {"name": "Chandra", "category": "Urson"}, {"name": "Malick", "category": "Urson"}, {"name": "Audrey", "category": "Urson"}, {"name": "Han", "category": "Urson"}, {"name": "Rosie", "category": "Urson"}, {"name": "Dhia", "category": "Urson"}, {"name": "Hui", "category": "Urson"}, {"name": "Erica", "category": "Urson"}, {"name": "Lin", "category": "Urson"}, {"name": "Moka", "category": "Urson"}, {"name": "Panyawat", "category": "Urson"}, {"name": "AkashDeep", "category": "Urson"}, {"name": "Zakia", "category": "Urson"}, {"name": "Supakit", "category": "Urson"}, {"name": "Camie", "category": "Urson"}, {"name": "Fierda", "category": "Urson"}, {"name": "Luoyan liu", "category": "Urson"}, {"name": "Fikki", "category": "Urson"},
     ]
 
 if "task_config" not in st.session_state:
@@ -78,42 +38,40 @@ def get_category_color(cat):
 
 def get_badge_html(name, cat):
     styles = {
-        "GG": "background: #E8F5E9; color: #2E7D32; border: 1px solid #A5D6A7;",
-        "TOTC": "background: #EFEBE9; color: #4E342E; border: 1px solid #BCAAA4;",
-        "Urson": "background: #E3F2FD; color: #1565C0; border: 1px solid #90CAF9;",
-        "Leading Hand": "background: #FFFDE7; color: #F57F17; border: 1px solid #FFF59D;"
+        "GG": "background: #1b381e; color: #81c784; border: 1px solid #2e7d32;",
+        "TOTC": "background: #3e2723; color: #d7ccc8; border: 1px solid #5d4037;",
+        "Urson": "background: #0d3b66; color: #90caf9; border: 1px solid #1565c0;",
+        "Leading Hand": "background: #4a3d00; color: #fff59d; border: 1px solid #fbc02d;"
     }
-    s = styles.get(cat, "background: #F5F5F5; color: #333;")
-    return f"<span style='{s} padding: 2px 8px; border-radius: 10px; font-size: 0.85rem; font-weight: 600; display: inline-block; margin: 2px;'>{name}</span>"
+    s = styles.get(cat, "background: #333; color: #fff;")
+    return f"<span style='{s} padding: 2px 6px; border-radius: 8px; font-size: 0.8rem; font-weight: 600; display: inline-block; margin: 2px;'>{name}</span>"
 
-st.title("🌿 GH3 Labor Allocation & Roster Planner")
+st.title("🌿 GH3 Labor Planner")
 
+# Compact Global Settings
 with st.container():
     c_set1, c_set2, c_set3, c_set4, c_set5 = st.columns(5)
-    week_date = c_set1.date_input("Week Of:", value=date.today())
-    total_rows = c_set2.number_input("Total Rows", min_value=1, value=260)
-    plants_per_row = c_set3.number_input("Plants per Row", min_value=1, value=480)
-    target_days = c_set4.number_input("Target Days", min_value=1.0, value=5.0, step=0.5)
-    hours_per_day = c_set5.number_input("Hours / Day", min_value=1.0, value=7.35, step=0.05)
+    week_date = c_set1.date_input("Week:", value=date.today())
+    total_rows = c_set2.number_input("Rows", min_value=1, value=260)
+    plants_per_row = c_set3.number_input("Pl/Row", min_value=1, value=480)
+    target_days = c_set4.number_input("Days", min_value=1.0, value=5.0, step=0.5)
+    hours_per_day = c_set5.number_input("Hrs/Day", min_value=1.0, value=7.35, step=0.05)
 
 total_plants = total_rows * plants_per_row
 st.markdown("---")
 
 tab_assign, tab_calc, tab_staff = st.tabs([
-    "📋 Tab 1: Roster & Assignments", 
-    "📊 Tab 2: KPI & Staff Requirement Calculator", 
-    "👥 Add / Remove Staff Pool"
+    "📋 Roster", 
+    "📊 Calculator", 
+    "👥 Staff Pool"
 ])
 
-# Filter only active tasks for the week
 active_tasks = {task: cfg for task, cfg in st.session_state.task_config.items() if cfg.get("active", True)}
 
 # ==========================================
-# TAB 1: ROSTER & ASSIGNMENTS (ANTI-DOUBLE BOOKING)
+# TAB 1: ROSTER & ASSIGNMENTS
 # ==========================================
 with tab_assign:
-    st.subheader("Interactive Assignment & Copy-Paste Roster")
-    
     task_requirements_display = {}
     for task, cfg in active_tasks.items():
         total_task_plants = total_plants * cfg["freq"]
@@ -122,23 +80,18 @@ with tab_assign:
         req_staff = math.ceil(total_man_days / target_days)
         task_requirements_display[task] = req_staff
 
-    col_pool, col_tasks = st.columns([1.2, 2])
+    col_pool, col_tasks = st.columns([1, 1.5])
     
     with col_pool:
-        st.markdown(f"#### 👥 Staff Pool ({len(st.session_state.staff_list)} Total)")
+        st.markdown(f"**Staff Pool ({len(st.session_state.staff_list)})**")
         for cat in ["GG", "Leading Hand", "TOTC", "Urson"]:
             members = [s["name"] for s in st.session_state.staff_list if s["category"] == cat]
             if members:
-                st.markdown(f"**{get_category_color(cat)}** ({len(members)})")
-                badge_block = "".join([get_badge_html(m, cat) for m in members])
-                st.markdown(badge_block, unsafe_allow_html=True)
-                st.markdown("")
+                st.markdown(f"**{get_category_color(cat)}** ({len(members)})", unsafe_allow_html=True)
+                st.markdown("".join([get_badge_html(m, cat) for m in members]), unsafe_allow_html=True)
 
     with col_tasks:
-        st.markdown("#### 📝 Task Assignments (Active Tasks Only)")
-        if not active_tasks:
-            st.info("All tasks are currently unchecked in Tab 2. Check at least one task to assign staff.")
-        
+        st.markdown("**Task Assignments**")
         all_staff_names = [s["name"] for s in st.session_state.staff_list]
         
         current_assigned_flat = []
@@ -147,14 +100,14 @@ with tab_assign:
                 current_assigned_flat.extend(assigned_list)
 
         for task, req_cnt in task_requirements_display.items():
-            st.markdown(f"**{task}** — <span style='color: #2D6A4F; font-weight: 600;'>Required: {req_cnt} staff</span>", unsafe_allow_html=True)
+            st.markdown(f"🔹 **{task}** (Need: **{req_cnt}**)")
             
             currently_selected = [m for m in st.session_state.assignments.get(task, []) if m in all_staff_names]
             other_assigned = [m for m in current_assigned_flat if m not in currently_selected]
             available_options = [m for m in all_staff_names if m not in other_assigned]
 
             assigned = st.multiselect(
-                f"Assign for {task}",
+                f"Assign {task}",
                 options=available_options,
                 default=currently_selected,
                 key=f"assign_task_{task}",
@@ -169,16 +122,14 @@ with tab_assign:
             
             diff = len(assigned) - req_cnt
             if diff == 0:
-                st.markdown(f"<small style='color: green;'>✅ Exactly {len(assigned)} staff assigned</small>", unsafe_allow_html=True)
+                st.markdown(f"<small style='color: #4e9f3d;'>✅ {len(assigned)} assigned</small>", unsafe_allow_html=True)
             elif diff > 0:
-                st.markdown(f"<small style='color: orange;'>⚠️ {len(assigned)} assigned ({diff} over requirement)</small>", unsafe_allow_html=True)
+                st.markdown(f"<small style='color: #ffb703;'>⚠️ +{diff} over</small>", unsafe_allow_html=True)
             else:
-                st.markdown(f"<small style='color: red;'>❌ {len(assigned)} assigned (Need {abs(diff)} more)</small>", unsafe_allow_html=True)
+                st.markdown(f"<small style='color: #ff6b6b;'>❌ Need {abs(diff)} more</small>", unsafe_allow_html=True)
             st.markdown("---")
 
-    st.markdown("---")
-    st.markdown("### 📱 Copy-Paste Format (Grouped by Category)")
-    
+    st.markdown("### 📱 Copy-Paste Roster Text")
     category_map = {"GG": [], "Leading Hand": [], "TOTC": [], "Urson": []}
     for task, assigned_members in st.session_state.assignments.items():
         if task in active_tasks:
@@ -188,14 +139,11 @@ with tab_assign:
                     category_map[cat] = []
                 category_map[cat].append({"name": name, "task": task})
 
-    output_text = f"GH3 - WEEKLY LABOR ROSTER ({week_date.strftime('%d %b %Y')})\n"
-    output_text += f"Parameters: {total_rows} rows | {plants_per_row} plants/row | Target: {target_days} days ({hours_per_day} hrs/day)\n"
-    output_text += "---------------------------------------------------\n\n"
-
+    output_text = f"GH3 ROSTER ({week_date.strftime('%d %b %Y')})\n\n"
     for cat in ["GG", "Leading Hand", "TOTC", "Urson"]:
         members = category_map[cat]
         if members:
-            output_text += f"*{cat.upper()} ({len(members)})*\n"
+            output_text += f"*{cat.upper()}*\n"
             for idx, item in enumerate(members, 1):
                 output_text += f"{idx}. {item['name']} - {item['task']}\n"
             output_text += "\n"
@@ -203,43 +151,27 @@ with tab_assign:
     st.code(output_text, language="text")
 
 # ==========================================
-# TAB 2: REQUIREMENT CALCULATOR & TASK TOGGLES
+# TAB 2: CALCULATOR & KPI EDIT
 # ==========================================
 with tab_calc:
-    st.subheader("📊 Staff Requirement Breakdown & Weekly Task Selector")
-    st.markdown(f"Calculated based on **{total_rows} rows**, **{plants_per_row} plants/row** (**{total_plants:,} total plants**), **{hours_per_day} hrs/day**, and a target of **{target_days} days**.")
-    st.markdown("Check or uncheck tasks below depending on whether you are running them this week:")
-    st.markdown("---")
+    st.subheader("📊 Calculator & KPIs")
     
-    col_h0, col_h1, col_h2, col_h3, col_h4, col_h5 = st.columns([0.6, 1.4, 1, 1.2, 1.2, 1])
-    col_h0.markdown("**Active**")
-    col_h1.markdown("**Task Name**")
-    col_h2.markdown("**Frequency**")
-    col_h3.markdown("**Avg KPI / Req**")
-    col_h4.markdown("**Target KPI / Req**")
-    col_h5.markdown("**Difference**")
-    st.markdown("---")
-
     total_avg_staff_req = 0
     total_target_staff_req = 0
 
     for task, cfg in st.session_state.task_config.items():
-        c0, c1, c2, c3, c4, c5 = st.columns([0.6, 1.4, 1, 1.2, 1.2, 1])
+        col_t1, col_t2, col_t3 = st.columns([1.2, 1, 1])
         
-        # Toggle checkbox for task active status
-        is_active = c0.checkbox(f"Active {task}", value=cfg.get("active", True), key=f"active_{task}", label_visibility="collapsed")
+        is_active = col_t1.checkbox(f"{task}", value=cfg.get("active", True), key=f"active_{task}")
         st.session_state.task_config[task]["active"] = is_active
         
-        c1.markdown(f"**{task}**" if is_active else f"~~{task}~~ <small style='color:gray;'>(Skipped)</small>", unsafe_allow_html=True)
         freq = cfg["freq"]
-        c2.markdown(f"{freq}x / week" if freq > 1 else "1x / week")
-        
         total_task_plants = total_plants * freq
         
-        new_avg_kpi = c3.number_input(f"Avg KPI {task}", min_value=1, value=int(cfg["avg_kpi"]), step=10, key=f"edit_avg_{task}", label_visibility="collapsed")
+        new_avg_kpi = col_t2.number_input(f"Avg KPI {task}", min_value=1, value=int(cfg["avg_kpi"]), step=10, key=f"edit_avg_{task}")
         st.session_state.task_config[task]["avg_kpi"] = new_avg_kpi
         
-        new_target_kpi = c4.number_input(f"Target KPI {task}", min_value=1, value=int(cfg["target_kpi"]), step=10, key=f"edit_target_{task}", label_visibility="collapsed")
+        new_target_kpi = col_t3.number_input(f"Target KPI {task}", min_value=1, value=int(cfg["target_kpi"]), step=10, key=f"edit_target_{task}")
         st.session_state.task_config[task]["target_kpi"] = new_target_kpi
         
         if is_active:
@@ -252,68 +184,41 @@ with tab_calc:
             target_req_staff = max(1, target_req_staff)
             total_target_staff_req += target_req_staff
             
-            c3.markdown(f"<small>Req: **{avg_req_staff} staff**</small>", unsafe_allow_html=True)
-            c4.markdown(f"<small>Req: **{target_req_staff} staff**</small>", unsafe_allow_html=True)
-            
-            diff = avg_req_staff - target_req_staff
-            if diff > 0:
-                c5.markdown(f"<span style='color: orange;'>+{diff} staff</span>", unsafe_allow_html=True)
-            elif diff < 0:
-                c5.markdown(f"<span style='color: green;'>{diff} staff</span>", unsafe_allow_html=True)
-            else:
-                c5.markdown("`Match`", unsafe_allow_html=True)
+            st.markdown(f"<small>📌 Req (Avg): <b>{avg_req_staff}</b> | Req (Target): <b>{target_req_staff}</b></small>", unsafe_allow_html=True)
         else:
-            c3.markdown("<small style='color: gray;'>Skipped</small>", unsafe_allow_html=True)
-            c4.markdown("<small style='color: gray;'>Skipped</small>", unsafe_allow_html=True)
-            c5.markdown("<small style='color: gray;'>N/A</small>", unsafe_allow_html=True)
+            st.markdown("<small style='color: gray;'>Task skipped this week</small>", unsafe_allow_html=True)
             
         st.markdown("---")
 
-    st.markdown("### 📈 Summary Total Requirements (Active Tasks Only)")
-    col_sum1, col_sum2, col_sum3 = st.columns(3)
-    col_sum1.metric("Total Staff Required (Avg KPI)", f"{total_avg_staff_req} staff")
-    col_sum2.metric("Total Staff Required (Target KPI)", f"{total_target_staff_req} staff")
-    col_sum3.metric("Total Available Staff Pool", f"{len(st.session_state.staff_list)} members")
+    st.metric("Total Staff Required (Avg)", f"{total_avg_staff_req}")
+    st.metric("Total Available Pool", f"{len(st.session_state.staff_list)}")
 
 # ==========================================
-# TAB 3: ADD / REMOVE STAFF POOL
+# TAB 3: STAFF POOL MANAGEMENT
 # ==========================================
 with tab_staff:
-    st.subheader("👥 Add New Starters or Remove Staff (Quits/Departures)")
+    st.subheader("👥 Manage Staff Pool")
     
-    col_add, col_remove = st.columns(2)
-    
-    with col_add:
-        st.markdown("#### ➕ Add New Starter")
-        with st.form("add_staff_form_direct", clear_on_submit=True):
-            new_name = st.text_input("Staff Name")
-            new_cat = st.selectbox("Category", ["GG", "Leading Hand", "TOTC", "Urson"])
-            submitted = st.form_submit_button("Add Member to Pool")
-            
-            if submitted and new_name.strip():
-                if not any(s["name"].lower() == new_name.strip().lower() for s in st.session_state.staff_list):
-                    st.session_state.staff_list.append({"name": new_name.strip(), "category": new_cat})
-                    st.success(f"Successfully added {new_name.strip()}!")
-                    st.rerun()
-                else:
-                    st.error("A staff member with this name already exists!")
-
-    with col_remove:
-        st.markdown("#### ❌ Remove Staff Member")
-        all_current_names = [s["name"] for s in st.session_state.staff_list]
-        staff_to_remove = st.selectbox("Select staff member who left:", options=[""] + all_current_names, key="remove_staff_select")
-        
-        if st.button("Remove Selected Staff", type="primary"):
-            if staff_to_remove:
-                st.session_state.staff_list = [s for s in st.session_state.staff_list if s["name"] != staff_to_remove]
-                for task_key in st.session_state.assignments:
-                    st.session_state.assignments[task_key] = [m for m in st.session_state.assignments[task_key] if m != staff_to_remove]
-                st.success(f"Removed {staff_to_remove} from the pool.")
+    with st.form("add_staff_form_direct", clear_on_submit=True):
+        new_name = st.text_input("New Starter Name")
+        new_cat = st.selectbox("Category", ["GG", "Leading Hand", "TOTC", "Urson"])
+        if st.form_submit_button("➕ Add Member") and new_name.strip():
+            if not any(s["name"].lower() == new_name.strip().lower() for s in st.session_state.staff_list):
+                st.session_state.staff_list.append({"name": new_name.strip(), "category": new_cat})
+                st.success(f"Added {new_name.strip()}!")
                 st.rerun()
             else:
-                st.warning("Please select a staff member first.")
+                st.error("Already exists!")
+
+    staff_to_remove = st.selectbox("Remove staff who left:", options=[""] + [s["name"] for s in st.session_state.staff_list])
+    if st.button("❌ Remove Selected", type="primary"):
+        if staff_to_remove:
+            st.session_state.staff_list = [s for s in st.session_state.staff_list if s["name"] != staff_to_remove]
+            for task_key in st.session_state.assignments:
+                st.session_state.assignments[task_key] = [m for m in st.session_state.assignments[task_key] if m != staff_to_remove]
+            st.success(f"Removed {staff_to_remove}.")
+            st.rerun()
 
     st.markdown("---")
-    st.markdown("#### Current Active Pool Overview")
     df_roster = pd.DataFrame(st.session_state.staff_list)
     st.dataframe(df_roster, use_container_width=True, hide_index=True)
