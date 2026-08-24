@@ -7,7 +7,7 @@ from datetime import date
 
 st.set_page_config(page_title="GH Labor Planner", layout="wide")
 
-# --- ULTRA-COMPACT CSS STYLING & HORIZONTAL BAY SCROLLER ---
+# --- ULTRA-COMPACT CSS STYLING & DUAL COLUMN ROW MAP ---
 st.markdown("""
     <style>
         .block-container {
@@ -46,17 +46,6 @@ st.markdown("""
             margin-bottom: 0.5rem;
             border-top: 1px solid #333;
             padding-top: 0.3rem;
-        }
-        .center-path-banner {
-            background-color: #3b3a30;
-            padding: 10px;
-            border-radius: 4px;
-            text-align: center;
-            font-weight: bold;
-            color: #ffb703;
-            margin: 10px 0;
-            border: 2px dashed #ffb703;
-            letter-spacing: 1px;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -482,62 +471,32 @@ with tab_staff:
     st.markdown('<div class="footer-watermark">Developed by Sagar</div>', unsafe_allow_html=True)
 
 # ==========================================
-# TAB 4: GREENHOUSE VISUAL FLOOR MAP
+# TAB 4: GREENHOUSE MAP (SIDE-BY-SIDE VERTICAL ROWS)
 # ==========================================
 with tab_map:
-    st.subheader("🗺️ Greenhouse Floor Map")
-    st.markdown("Click any Bay block below to inspect its 5 rows. All 26 bays are lined up horizontally.")
+    st.subheader("🗺️ Greenhouse Map View")
+    st.markdown("North Side (Odd rows: 3001–3259) on the left | South Side (Even rows: 3002–3260) on the right.")
     
-    if "map_side" not in st.session_state:
-        st.session_state.map_side = "North"
-    if "map_bay" not in st.session_state:
-        st.session_state.map_bay = 1
-
-    # --- NORTH SIDE MAP (BAYS 1 to 26 without 'B') ---
-    st.markdown("##### ⬆️ NORTH SIDE (Odd Rows: 3001 – 3259)")
-    north_cols = st.columns(26)
-    for b in range(1, 27):
-        if north_cols[b-1].button(f"{b}", key=f"map_n_{b}"):
-            st.session_state.map_side = "North"
-            st.session_state.map_bay = b
-
-    # --- CENTER PATH BANNER ---
-    st.markdown(
-        '<div class="center-path-banner">↔️ EAST — CENTER ACCESSWAY PATH — WEST ↔️</div>', 
-        unsafe_allow_html=True
-    )
-
-    # --- SOUTH SIDE MAP (BAYS 1 to 26 without 'B') ---
-    st.markdown("##### ⬇️ SOUTH SIDE (Even Rows: 3002 – 3260)")
-    south_cols = st.columns(26)
-    for b in range(1, 27):
-        if south_cols[b-1].button(f"{b}", key=f"map_s_{b}"):
-            st.session_state.map_side = "South"
-            st.session_state.map_bay = b
-
-    st.markdown("---")
+    # Generate row arrays
+    north_rows = list(range(3001, 3260, 2))
+    south_rows = list(range(3002, 3261, 2))
     
-    # --- SELECTED BAY INSPECTOR ---
-    cur_side = st.session_state.map_side
-    cur_bay = st.session_state.map_bay
+    col_north, col_south = st.columns(2)
     
-    is_n = (cur_side == "North")
-    base_num = 3001 if is_n else 3002
-    offset = (cur_bay - 1) * 10
-    
-    r1 = base_num + offset
-    r2 = r1 + 2
-    r3 = r2 + 2
-    r4 = r3 + 2
-    r5 = r4 + 2
-    
-    st.markdown(f"### 🔍 Inspected: **{cur_side} Side — Bay {cur_bay}** (5 Rows)")
-    
-    rc = st.columns(5)
-    rc[0].metric("Row 1", f"{r1}")
-    rc[1].metric("Row 2", f"{r2}")
-    rc[2].metric("Row 3", f"{r3}")
-    rc[3].metric("Row 4", f"{r4}")
-    rc[4].metric("Row 5", f"{r5}")
-    
+    with col_north:
+        st.markdown("#### ⬆️ North Side (Odd Rows)")
+        for r in north_rows:
+            st.markdown(
+                f"<div style='background-color: #262d35; border: 1px solid #444; padding: 6px 10px; margin-bottom: 4px; border-radius: 4px; text-align: center; font-weight: 500;'>Row {r}</div>",
+                unsafe_allow_html=True
+            )
+            
+    with col_south:
+        st.markdown("#### ⬇️ South Side (Even Rows)")
+        for r in south_rows:
+            st.markdown(
+                f"<div style='background-color: #262d35; border: 1px solid #444; padding: 6px 10px; margin-bottom: 4px; border-radius: 4px; text-align: center; font-weight: 500;'>Row {r}</div>",
+                unsafe_allow_html=True
+            )
+            
     st.markdown('<div class="footer-watermark">Developed by Sagar</div>', unsafe_allow_html=True)
