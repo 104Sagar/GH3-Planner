@@ -47,14 +47,6 @@ st.markdown("""
             border-top: 1px solid #333;
             padding-top: 0.3rem;
         }
-        .map-section {
-            background-color: #1e252b;
-            padding: 10px;
-            border-radius: 6px;
-            border: 1px solid #333;
-            text-align: center;
-            margin-bottom: 10px;
-        }
         .center-path {
             background-color: #3b3a30;
             padding: 8px;
@@ -489,26 +481,70 @@ with tab_staff:
     st.markdown('<div class="footer-watermark">Developed by Sagar</div>', unsafe_allow_html=True)
 
 # ==========================================
-# TAB 4: GREENHOUSE MAP
+# TAB 4: GREENHOUSE INTERACTIVE MAP
 # ==========================================
 with tab_map:
-    st.subheader("🗺️ Greenhouse Layout Map")
-    st.markdown("Visual reference showing row numbering split by the East-to-West center path.")
+    st.subheader("🗺️ Greenhouse Interactive Map")
+    st.markdown("Select a quadrant and bay to inspect its 5 rows (North Side: Odd rows 3001–3259 | South Side: Even rows 3002–3260).")
     
-    st.markdown("""
-        <div class="map-section">
-            <h3 style="color: #81c784; margin-bottom: 5px;">⬆️ NORTH SIDE (ODD ROWS)</h3>
-            <p style="color: #bbb; margin-bottom: 0;">Starts from <b>3001</b> up to <b>3259</b></p>
-        </div>
-        
-        <div class="center-path">
-            ↔️ CENTER PATH (EAST TO WEST ACCESSWAY) ↔️
-        </div>
-        
-        <div class="map-section">
-            <h3 style="color: #90caf9; margin-bottom: 5px;">⬇️ SOUTH SIDE (EVEN ROWS)</h3>
-            <p style="color: #bbb; margin-bottom: 0;">Starts from <b>3002</b> up to <b>3260</b></p>
-        </div>
-    """, unsafe_allow_html=True)
+    # Select Side
+    side_choice = st.radio("Select Side:", ["North Side (Odd Rows: 3001 - 3259)", "South Side (Even Rows: 3002 - 3260)"], horizontal=True)
+    
+    is_north = "North" in side_choice
+    
+    # Select Quadrant (13 bays each)
+    quad_choice = st.radio("Select Quadrant (Bays):", ["Bays 1 to 13", "Bays 14 to 26"], horizontal=True)
+    
+    start_bay = 1 if "1 to 13" in quad_choice else 14
+    end_bay = 13 if "1 to 13" in quad_choice else 26
+    
+    st.markdown("---")
+    st.markdown(f"**Click a Bay ({side_choice.split()[0]} - {quad_choice}):**")
+    
+    # Display 13 clickable bay buttons in compact columns
+    bay_cols = st.columns(7)
+    selected_bay = None
+    
+    for b_idx in range(start_bay, end_bay + 1):
+        col_target = bay_cols[(b_idx - start_bay) % 7]
+        if col_target.button(f"Bay {b_idx}", key=f"bay_btn_{side_choice}_{b_idx}"):
+            st.session_state.active_bay = b_idx
+            st.session_state.active_side = is_north
+
+    # Check active bay from session state
+    current_active_bay = st.session_state.get("active_bay", start_bay)
+    current_active_side = st.session_state.get("active_side", is_north)
+    
+    # Ensure active bay is within current range
+    if current_active_bay < start_bay or current_active_bay > end_bay or current_active_side != is_north:
+        current_active_bay = start_bay
+        st.session_state.active_bay = start_bay
+        st.session_state.active_side = is_north
+
+    st.markdown("---")
+    st.markdown(f"### 🔍 Details for Bay {current_active_bay} ({'North Side' if current_active_side else 'South Side'})")
+    
+    # Calculate 5 rows inside the selected bay
+    # Bay 1 starts at 3001 (North) or 3002 (South). Each bay has 5 rows.
+    base_start = 3001 if current_active_side else 3002
+    bay_offset = (current_active_bay - 1) * 10 # Each bay covers 10 numbers (5 rows * step of 2)
+    
+    row_1 = base_start + bay_offset
+    row_2 = row_1 + 2
+    row_3 = row_2 + 2
+    row_4 = row_3 + 2
+    row_5 = row_4 + 2
+    
+    r_cols = st.columns(5)
+    r_cols[0].metric("Row 1", f"{row_1}")
+    r_cols[1].metric("Row 2", f"{row_2}")
+    r_cols[2].metric("Row 3", f"{row_3}")
+    r_cols[3].metric("Row 4", f"{row_4}")
+    r_cols[4].metric("Row 5", f"{row_5}")
+    
+    st.markdown(
+        f"<div class='center-path'>↔️ CENTER PATH DIVIDER (East to West) ↔️</div>", 
+        unsafe_allow_html=True
+    )
     
     st.markdown('<div class="footer-watermark">Developed by Sagar</div>', unsafe_allow_html=True)
