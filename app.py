@@ -9,6 +9,7 @@ st.set_page_config(page_title="GH3 Roster & Allocation Planner", layout="wide")
 
 STAFF_FILE = "staff_data.json"
 TASK_FILE = "task_data.json"
+ASSIGNMENT_FILE = "assignment_data.json"
 
 DEFAULT_STAFF = [
     {"name": "Marie", "category": "GG"}, {"name": "Kid", "category": "GG"}, {"name": "Ting", "category": "GG"}, {"name": "Tommy", "category": "GG"}, {"name": "Risa", "category": "GG"},
@@ -47,7 +48,8 @@ if "task_config" not in st.session_state:
     st.session_state.task_config = load_data(TASK_FILE, DEFAULT_TASKS)
 
 if "assignments" not in st.session_state:
-    st.session_state.assignments = {task: [] for task in st.session_state.task_config.keys()}
+    default_assignments = {task: [] for task in st.session_state.task_config.keys()}
+    st.session_state.assignments = load_data(ASSIGNMENT_FILE, default_assignments)
 
 if "global_params" not in st.session_state:
     st.session_state.global_params = {
@@ -89,7 +91,6 @@ gp = st.session_state.global_params
 total_plants = gp["total_rows"] * gp["plants_per_row"]
 
 def sort_tasks(task_dict):
-    # Clip/Shoot first (0), Pollination second (1), Others / Other last (99)
     def task_sort_key(item):
         name = item[0].lower()
         if "clip/shoot" in name:
@@ -145,6 +146,7 @@ with tab_assign:
             if t in active_tasks:
                 current_assigned_flat.extend(assigned_list)
 
+        assignments_changed = False
         for task, req_cnt in task_requirements_display.items():
             st.markdown(f"🔹 **{task}** (Need: **{req_cnt}**)")
             
@@ -159,7 +161,10 @@ with tab_assign:
                 key=f"assign_task_{task}",
                 label_visibility="collapsed"
             )
-            st.session_state.assignments[task] = assigned
+            
+            if st.session_state.assignments.get(task) != assigned:
+                st.session_state.assignments[task] = assigned
+                assignments_changed = True
             
             current_assigned_flat = []
             for t, assigned_list in st.session_state.assignments.items():
@@ -174,6 +179,9 @@ with tab_assign:
             else:
                 st.markdown(f"<small style='color: #ff6b6b;'>❌ Need {abs(diff)} more</small>", unsafe_allow_html=True)
             st.markdown("---")
+
+        if assignments_changed:
+            save_data(ASSIGNMENT_FILE, st.session_state.assignments)
 
     # --- COPY PASTE LIST 1 ---
     st.markdown("### 📱 Copy-Paste List 1: Grouped by Category")
@@ -326,6 +334,7 @@ with tab_calc:
                         save_data(TASK_FILE, st.session_state.task_config)
                         if new_task_name.strip() not in st.session_state.assignments:
                             st.session_state.assignments[new_task_name.strip()] = []
+                            save_data(ASSIGNMENT_FILE, st.session_state.assignments)
                         st.success(f"Added task {new_task_name.strip()}!")
                         st.rerun()
                     else:
@@ -341,6 +350,7 @@ with tab_calc:
                     save_data(TASK_FILE, st.session_state.task_config)
                     if task_to_delete in st.session_state.assignments:
                         del st.session_state.assignments[task_to_delete]
+                        save_data(ASSIGNMENT_FILE, st.session_state.assignments)
                     st.success(f"Deleted task '{task_to_delete}'.")
                     st.rerun()
                 else:
@@ -375,6 +385,7 @@ with tab_staff:
             save_staff(st.session_state.staff_list)
             for task_key in st.session_state.assignments:
                 st.session_state.assignments[task_key] = [m for m in st.session_state.assignments[task_key] if m != staff_to_remove]
+            save_data(ASSIGNMENT_FILE, st.session_state.assignments)
             st.success(f"Removed {staff_to_remove}.")
             st.rerun()
 
