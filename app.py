@@ -7,7 +7,7 @@ from datetime import date
 
 st.set_page_config(page_title="GH Labor Planner", layout="wide")
 
-# --- COMPACT CSS STYLING & GRADIENT ROW COLORING ---
+# --- COMPACT CSS & FORCED MOBILE SIDE-BY-SIDE GRID ---
 st.markdown("""
     <style>
         .block-container {
@@ -50,9 +50,21 @@ st.markdown("""
         div.stButton > button {
             width: 100%;
             border-radius: 4px;
-            padding: 4px 8px;
+            padding: 4px 6px;
             font-weight: 500;
             border: 1px solid #444;
+        }
+        /* FORCE SIDE-BY-SIDE COLUMNS EVEN ON MOBILE */
+        @media (max-width: 9999px) {
+            [data-testid="column"] {
+                width: 50% !important;
+                flex: 1 1 50% !important;
+                min-width: 0 !important;
+            }
+            [data-testid="stHorizontalBlock"] {
+                display: flex !important;
+                flex-direction: row !important;
+            }
         }
     </style>
 """, unsafe_allow_html=True)
@@ -490,7 +502,7 @@ with tab_map:
     available_tasks_list = list(st.session_state.task_config.keys())
     selected_track_task = st.selectbox("Select Task to Track & Color-Code:", options=available_tasks_list, key="map_task_selector")
     
-    st.markdown("<small>💡 <i>Tap any row below to cycle status: <b>Unfilled (Grey)</b> ➡️ <b>Half Finished (Half Yellow)</b> ➡️ <b>Finished (Full Green)</b></i></small>", unsafe_allow_html=True)
+    st.markdown("<small>💡 <i>Tap any row below: <b>Grey (Unfilled)</b> ➡️ <b>Half Yellow (Half Finished)</b> ➡️ <b>Green (Finished)</b></i></small>", unsafe_allow_html=True)
     st.markdown("---")
     
     if selected_track_task not in st.session_state.map_progress:
@@ -502,21 +514,20 @@ with tab_map:
     col_north, col_south = st.columns(2)
     
     with col_north:
-        st.markdown("#### ⬆️ North Side (Odd)")
+        st.markdown("#### ⬆️ North Side")
         for r in north_rows:
             r_str = str(r)
             current_status = st.session_state.map_progress[selected_track_task].get(r_str, "Unfilled")
             
-            # Full green, half-filled yellow gradient, or dark grey
+            # Full green, half-filled yellow gradient, or dark grey with clean row text
             if current_status == "Finished":
-                btn_style = "background-color: #2e7d32; color: white;"
-                btn_label = f"Row {r} (Finished)"
+                btn_style = "background-color: #2e7d32; color: white; font-weight: 500;"
             elif current_status == "Half Finished":
-                btn_style = "background: linear-gradient(90deg, #fbc02d 50%, #2b2b2b 50%); color: white; font-weight: bold;"
-                btn_label = f"Row {r} (Half)"
+                btn_style = "background: linear-gradient(90deg, #fbc02d 50%, #2b2b2b 50%); color: white; font-weight: 500;"
             else:
-                btn_style = "background-color: #2b2b2b; color: #ccc;"
-                btn_label = f"Row {r}"
+                btn_style = "background-color: #2b2b2b; color: #ccc; font-weight: 500;"
+                
+            btn_label = f"Row {r}"
                 
             st.markdown(f'<style>div.stButton > button#row_btn_{selected_track_task}_{r} {{ {btn_style} }}</style>', unsafe_allow_html=True)
             if st.button(btn_label, key=f"row_btn_{selected_track_task}_{r}"):
@@ -532,20 +543,19 @@ with tab_map:
                 st.rerun()
                 
     with col_south:
-        st.markdown("#### ⬇️ South Side (Even)")
+        st.markdown("#### ⬇️ South Side")
         for r in south_rows:
             r_str = str(r)
             current_status = st.session_state.map_progress[selected_track_task].get(r_str, "Unfilled")
             
             if current_status == "Finished":
-                btn_style = "background-color: #2e7d32; color: white;"
-                btn_label = f"Row {r} (Finished)"
+                btn_style = "background-color: #2e7d32; color: white; font-weight: 500;"
             elif current_status == "Half Finished":
-                btn_style = "background: linear-gradient(90deg, #fbc02d 50%, #2b2b2b 50%); color: white; font-weight: bold;"
-                btn_label = f"Row {r} (Half)"
+                btn_style = "background: linear-gradient(90deg, #fbc02d 50%, #2b2b2b 50%); color: white; font-weight: 500;"
             else:
-                btn_style = "background-color: #2b2b2b; color: #ccc;"
-                btn_label = f"Row {r}"
+                btn_style = "background-color: #2b2b2b; color: #ccc; font-weight: 500;"
+                
+            btn_label = f"Row {r}"
                 
             st.markdown(f'<style>div.stButton > button#row_btn_{selected_track_task}_{r} {{ {btn_style} }}</style>', unsafe_allow_html=True)
             if st.button(btn_label, key=f"row_btn_{selected_track_task}_{r}"):
