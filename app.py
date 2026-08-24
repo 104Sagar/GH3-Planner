@@ -7,7 +7,7 @@ from datetime import date
 
 st.set_page_config(page_title="GH Labor Planner", layout="wide")
 
-# --- COMPACT CSS STYLING & WATERMARK ---
+# --- COMPACT CSS STYLING ---
 st.markdown("""
     <style>
         .block-container {
@@ -26,20 +26,16 @@ st.markdown("""
         h1, h2, h3 {
             margin-bottom: 0.3rem;
         }
-        .watermark {
-            position: fixed;
-            bottom: 10px;
-            right: 15px;
+        .footer-watermark {
+            text-align: center;
             font-size: 0.75rem;
-            color: #666666;
-            background: rgba(0, 0, 0, 0.5);
-            padding: 2px 6px;
-            border-radius: 4px;
-            z-index: 999;
-            pointer-events: none;
+            color: #888888;
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+            border-top: 1px solid #333;
+            padding-top: 0.5rem;
         }
     </style>
-    <div class="watermark">Developed by Sagar</div>
 """, unsafe_allow_html=True)
 
 STAFF_FILE = "staff_data.json"
@@ -276,6 +272,7 @@ with tab_assign:
         list3_text += "No Urson staff assigned to tasks yet.\n"
         
     st.code(list3_text, language="text")
+    st.markdown('<div class="footer-watermark">Developed by Sagar</div>', unsafe_allow_html=True)
 
 # ==========================================
 # TAB 2: CALCULATOR, SETTINGS & TASK BUILDER
@@ -424,6 +421,7 @@ with tab_calc:
     col_m2.metric("Total Available Pool", f"{len(st.session_state.staff_list)}")
     planned_hrs = total_avg_staff_req * 7.6 * 5
     col_m3.metric("Roughly Planned Hours", f"{planned_hrs:g} hrs")
+    st.markdown('<div class="footer-watermark">Developed by Sagar</div>', unsafe_allow_html=True)
 
 # ==========================================
 # TAB 3: STAFF POOL MANAGEMENT (PERSISTENT)
@@ -457,3 +455,4 @@ with tab_staff:
     st.markdown("---")
     df_roster = pd.DataFrame(st.session_state.staff_list)
     st.dataframe(df_roster, use_container_width=True, hide_index=True)
+    st.markdown('<div class="footer-watermark">Developed by Sagar</div>', unsafe_allow_html=True)
