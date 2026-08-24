@@ -7,45 +7,63 @@ from datetime import date
 
 st.set_page_config(page_title="GH Labor Planner", layout="wide")
 
-# --- COMPACT CSS & STYLING FOR SIDE-BY-SIDE TAPPABLE ROWS ---
+# --- COMPACT MOBILE-FRIENDLY CSS STYLING ---
 st.markdown("""
     <style>
         .block-container {
-            padding-top: 0.8rem;
-            padding-bottom: 0.5rem;
-            padding-left: 0.8rem;
-            padding-right: 0.8rem;
+            padding-top: 0.6rem;
+            padding-bottom: 0.4rem;
+            padding-left: 0.5rem;
+            padding-right: 0.5rem;
         }
         hr {
-            margin-top: 0.3rem;
-            margin-bottom: 0.3rem;
-        }
-        .stMultiSelect {
-            margin-bottom: -1.2rem;
+            margin-top: 0.2rem;
+            margin-bottom: 0.2rem;
         }
         h1 {
-            font-size: 1.6rem !important;
-            margin-bottom: 0.2rem !important;
+            font-size: 1.4rem !important;
+            margin-bottom: 0.1rem !important;
         }
-        h2, h3 {
-            font-size: 1.1rem !important;
-            margin-top: 0.2rem !important;
-            margin-bottom: 0.2rem !important;
+        h2, h3, h5 {
+            font-size: 1rem !important;
+            margin-top: 0.1rem !important;
+            margin-bottom: 0.1rem !important;
         }
         p, label, span, div {
-            font-size: 0.85rem !important;
-        }
-        .stNumberInput, .stDateInput {
-            margin-bottom: -0.5rem;
+            font-size: 0.8rem !important;
         }
         .footer-watermark {
             text-align: center;
-            font-size: 0.7rem;
+            font-size: 0.65rem;
             color: #888888;
-            margin-top: 1rem;
-            margin-bottom: 0.5rem;
+            margin-top: 0.8rem;
+            margin-bottom: 0.4rem;
             border-top: 1px solid #333;
-            padding-top: 0.3rem;
+            padding-top: 0.2rem;
+        }
+        /* COMPACT BUTTON STYLING FOR MOBILE */
+        div.stButton > button {
+            width: 100%;
+            border-radius: 3px;
+            padding: 2px 4px !important;
+            font-size: 0.78rem !important;
+            min-height: unset !important;
+            height: 32px;
+            border: 1px solid #444;
+        }
+        /* FORCE COLUMNS TO STAY SIDE-BY-SIDE ON MOBILE (IPHONE) */
+        @media (max-width: 768px) {
+            [data-testid="column"] {
+                width: 50% !important;
+                flex: 1 1 50% !important;
+                min-width: 0 !important;
+                padding: 0 2px !important;
+            }
+            [data-testid="stHorizontalBlock"] {
+                display: flex !important;
+                flex-direction: row !important;
+                gap: 4px !important;
+            }
         }
     </style>
 """, unsafe_allow_html=True)
@@ -483,7 +501,7 @@ with tab_map:
     available_tasks_list = list(st.session_state.task_config.keys())
     selected_track_task = st.selectbox("Select Task to Track & Color-Code:", options=available_tasks_list, key="map_task_selector")
     
-    st.markdown("<small>💡 <i>Tap once for <b>Half Yellow</b>, twice for <b>Full Green</b>, third tap to reset.</i></small>", unsafe_allow_html=True)
+    st.markdown("<small>💡 <i>Tap once for <b>Yellow</b>, twice for <b>Green</b>, third tap resets.</i></small>", unsafe_allow_html=True)
     st.markdown("---")
     
     if selected_track_task not in st.session_state.map_progress:
@@ -492,7 +510,7 @@ with tab_map:
     north_rows = list(range(3001, 3260, 2))
     south_rows = list(range(3002, 3261, 2))
     
-    # Use standard 2 columns side-by-side
+    # 2 Columns forced side-by-side on mobile via CSS
     col_north, col_south = st.columns(2)
     
     map_updated = False
@@ -503,13 +521,12 @@ with tab_map:
             r_str = str(r)
             status = st.session_state.map_progress[selected_track_task].get(r_str, "Unfilled")
             
-            # Button color styling
             if status == "Finished":
-                label = f"🟢 Row {r}"
+                label = f"🟢 {r}"
             elif status == "Half Finished":
-                label = f"🟡 Row {r}"
+                label = f"🟡 {r}"
             else:
-                label = f"⚪ Row {r}"
+                label = f"⚪ {r}"
                 
             if st.button(label, key=f"row_tap_n_{selected_track_task}_{r}"):
                 if status == "Unfilled":
@@ -528,11 +545,11 @@ with tab_map:
             status = st.session_state.map_progress[selected_track_task].get(r_str, "Unfilled")
             
             if status == "Finished":
-                label = f"🟢 Row {r}"
+                label = f"🟢 {r}"
             elif status == "Half Finished":
-                label = f"🟡 Row {r}"
+                label = f"🟡 {r}"
             else:
-                label = f"⚪ Row {r}"
+                label = f"⚪ {r}"
                 
             if st.button(label, key=f"row_tap_s_{selected_track_task}_{r}"):
                 if status == "Unfilled":
