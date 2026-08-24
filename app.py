@@ -7,7 +7,7 @@ from datetime import date
 
 st.set_page_config(page_title="GH Labor Planner", layout="wide")
 
-# --- CLEAN COMPACT CSS ---
+# --- COMPACT CSS ---
 st.markdown("""
     <style>
         .block-container {
@@ -228,8 +228,10 @@ with tab_assign:
         if assignments_changed:
             save_data(ASSIGNMENT_FILE, st.session_state.assignments)
 
-    # --- COPY PASTE LISTS ---
-    st.markdown("### 📱 Copy-Paste List 1: Grouped by Category")
+    # --- COPY-PASTE READY ROSTER LISTS ---
+    st.markdown("---")
+    st.markdown("### 📱 Copy-Paste Ready Roster Lists")
+
     cat_map = {"GG": [], "Leading Hand": [], "TOTC": [], "Urson": []}
     for task, assigned_members in st.session_state.assignments.items():
         if task in active_tasks:
@@ -249,7 +251,6 @@ with tab_assign:
             list1_text += "\n"
     st.code(list1_text, language="text")
 
-    st.markdown("### 📱 Copy-Paste List 2: Grouped by Task (All Staff)")
     list2_text = f"GH ROSTER - BY TASK ({gp['week_date']})\n\n"
     for task in active_tasks:
         assigned_members = st.session_state.assignments.get(task, [])
@@ -261,7 +262,6 @@ with tab_assign:
             list2_text += "\n"
     st.code(list2_text, language="text")
 
-    st.markdown("### 📱 Copy-Paste List 3: Urson Staff Only (By Task)")
     list3_text = f"GH ROSTER - URSON ONLY ({gp['week_date']})\n\n"
     urson_has_assignments = False
     for task in active_tasks:
@@ -433,7 +433,7 @@ with tab_calc:
     st.markdown('<div class="footer-watermark">Developed by Sagar</div>', unsafe_allow_html=True)
 
 # ==========================================
-# TAB 3: STAFF POOL MANAGEMENT (PERSISTENT)
+# TAB 3: STAFF POOL MANAGEMENT
 # ==========================================
 with tab_staff:
     st.subheader("👥 Manage Staff Pool")
@@ -444,7 +444,7 @@ with tab_staff:
         if st.form_submit_button("➕ Add Member") and new_name.strip():
             if not any(s["name"].lower() == new_name.strip().lower() for s in st.session_state.staff_list):
                 st.session_state.staff_list.append({"name": new_name.strip(), "category": new_cat})
-                save_staff(st.session_state.staff_list)
+                save_data(STAFF_FILE, st.session_state.staff_list)
                 st.success(f"Added {new_name.strip()}!")
                 st.rerun()
             else:
@@ -454,7 +454,7 @@ with tab_staff:
     if st.button("❌ Remove Selected", type="primary"):
         if staff_to_remove:
             st.session_state.staff_list = [s for s in st.session_state.staff_list if s["name"] != staff_to_remove]
-            save_staff(st.session_state.staff_list)
+            save_data(STAFF_FILE, st.session_state.staff_list)
             for task_key in st.session_state.assignments:
                 st.session_state.assignments[task_key] = [m for m in st.session_state.assignments[task_key] if m != staff_to_remove]
             save_data(ASSIGNMENT_FILE, st.session_state.assignments)
@@ -484,9 +484,7 @@ with tab_map:
     north_rows = list(range(3001, 3260, 2))
     south_rows = list(range(3002, 3261, 2))
     
-    # Use standard Streamlit columns paired side-by-side cleanly
     col_north, col_south = st.columns(2)
-    
     map_updated = False
 
     with col_north:
