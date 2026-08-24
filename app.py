@@ -54,7 +54,6 @@ if "staff_list" not in st.session_state:
         {"name": "Fikki", "category": "Urson"},
     ]
 
-# Tasks with Target KPIs, Average KPIs, and Frequencies (Pollination = 3x/week, others = 1x)
 if "task_config" not in st.session_state:
     st.session_state.task_config = {
         "Clip/Shoot": {"target_kpi": 674, "avg_kpi": 400, "freq": 1},
@@ -68,7 +67,6 @@ if "task_config" not in st.session_state:
 if "assignments" not in st.session_state:
     st.session_state.assignments = {task: [] for task in st.session_state.task_config.keys()}
 
-# --- COLOR CODING HELPERS ---
 def get_category_color(cat):
     colors = {
         "GG": "🟢 **GG**",
@@ -88,10 +86,8 @@ def get_badge_html(name, cat):
     s = styles.get(cat, "background: #F5F5F5; color: #333;")
     return f"<span style='{s} padding: 2px 8px; border-radius: 10px; font-size: 0.85rem; font-weight: 600; display: inline-block; margin: 2px;'>{name}</span>"
 
-# --- MAIN APP HEADER ---
 st.title("🌿 GH3 Labor Allocation & Roster Planner")
 
-# Global Settings (Editable)
 with st.container():
     c_set1, c_set2, c_set3, c_set4 = st.columns(4)
     week_date = c_set1.date_input("Week Of:", value=date.today())
@@ -102,7 +98,6 @@ with st.container():
 total_plants = total_rows * plants_per_row
 st.markdown("---")
 
-# --- TABS SETUP ---
 tab_assign, tab_calc, tab_staff = st.tabs([
     "📋 Tab 1: Roster & Assignments", 
     "📊 Tab 2: KPI & Staff Requirement Calculator", 
@@ -115,7 +110,6 @@ tab_assign, tab_calc, tab_staff = st.tabs([
 with tab_assign:
     st.subheader("Interactive Assignment & Copy-Paste Roster")
     
-    # Calculate required staff dynamically for display next to task headings
     task_requirements_display = {}
     for task, cfg in st.session_state.task_config.items():
         total_task_plants = total_plants * cfg["freq"]
@@ -128,9 +122,6 @@ with tab_assign:
     
     with col_pool:
         st.markdown("#### 👥 Staff Pool")
-        st.markdown("<small>Available team members grouped by category:</small>", unsafe_allow_html=True)
-        
-        # Display staff grouped by category
         for cat in ["GG", "Leading Hand", "TOTC", "Urson"]:
             members = [s["name"] for s in st.session_state.staff_list if s["category"] == cat]
             if members:
@@ -141,8 +132,6 @@ with tab_assign:
 
     with col_tasks:
         st.markdown("#### 📝 Task Assignments")
-        st.markdown("<small>Assign staff from the dropdowns below:</small>", unsafe_allow_html=True)
-        
         all_staff_names = [s["name"] for s in st.session_state.staff_list]
         assigned_flat = []
 
@@ -159,7 +148,6 @@ with tab_assign:
             st.session_state.assignments[task] = assigned
             assigned_flat.extend(assigned)
             
-            # Show live count vs required count
             diff = len(assigned) - req_cnt
             if diff == 0:
                 st.markdown(f"<small style='color: green;'>✅ Exactly {len(assigned)} staff assigned</small>", unsafe_allow_html=True)
@@ -169,7 +157,6 @@ with tab_assign:
                 st.markdown(f"<small style='color: red;'>❌ {len(assigned)} assigned (Need {abs(diff)} more)</small>", unsafe_allow_html=True)
             st.markdown("---")
 
-        # Double booking check
         duplicates = set([x for x in assigned_flat if assigned_flat.count(x) > 1])
         if duplicates:
             st.error(f"⚠️ **Double Booking Warning:** {', '.join(duplicates)} are assigned to multiple tasks!")
@@ -177,7 +164,6 @@ with tab_assign:
     st.markdown("---")
     st.markdown("### 📱 Copy-Paste Format (Grouped by Category)")
     
-    # Build category-based summary for copy-pasting
     category_map = {"GG": [], "Leading Hand": [], "TOTC": [], "Urson": []}
     for task, assigned_members in st.session_state.assignments.items():
         for name in assigned_members:
@@ -200,14 +186,12 @@ with tab_assign:
 
     st.code(output_text, language="text")
 
-
 # ==========================================
-# TAB 2: REQUIREMENT CALCULATOR (Avg vs Target KPI)
+# TAB 2: REQUIREMENT CALCULATOR
 # ==========================================
 with tab_calc:
     st.subheader("📊 Staff Requirement Breakdown (Average KPI vs. Target KPI)")
     st.markdown(f"Calculated based on **{total_rows} rows**, **{plants_per_row} plants/row** (**{total_plants:,} total plants**), and a target of **{target_days} days**.")
-    
     st.markdown("---")
     
     col_h1, col_h2, col_h3, col_h4, col_h5 = st.columns([1.5, 1, 1, 1, 1])
@@ -220,26 +204,23 @@ with tab_calc:
 
     for task, cfg in st.session_state.task_config.items():
         c1, c2, c3, c4, c5 = st.columns([1.5, 1, 1, 1, 1])
-        
         c1.markdown(f"**{task}**")
         freq = cfg["freq"]
         c2.markdown(f"{freq}x / week" if freq > 1 else "1x / week")
         
         total_task_plants = total_plants * freq
         
-        # Avg KPI calculation
+        # Corrected calculation dividing by target_days
         avg_kpi = cfg["avg_kpi"]
         avg_man_days = total_task_plants / avg_kpi if avg_kpi > 0 else 0
         avg_req_staff = math.ceil(avg_man_days / target_days)
         c3.markdown(f"**{avg_req_staff} staff**<br><small style='color:gray;'>({avg_kpi} KPI)</small>", unsafe_allow_html=True)
         
-        # Target KPI calculation
         target_kpi = cfg["target_kpi"]
         target_man_days = total_task_plants / target_kpi if target_kpi > 0 else 0
         target_req_staff = math.ceil(target_man_days / target_days)
         c4.markdown(f"**{target_req_staff} staff**<br><small style='color:gray;'>({target_kpi} KPI)</small>", unsafe_allow_html=True)
         
-        # Difference
         diff = avg_req_staff - target_req_staff
         if diff > 0:
             c5.markdown(f"<span style='color: orange;'>+{diff} staff needed (Avg)</span>", unsafe_allow_html=True)
@@ -247,16 +228,13 @@ with tab_calc:
             c5.markdown(f"<span style='color: green;'>{diff} staff (Target met)</span>", unsafe_allow_html=True)
         else:
             c5.markdown("`Exact Match`", unsafe_allow_html=True)
-            
-        st.markdown("---")
-
+            st.markdown("---")
 
 # ==========================================
 # TAB 3: MANAGE STAFF
 # ==========================================
 with tab_staff:
     st.subheader("Manage Team Roster")
-    
     with st.form("add_staff_form_new", clear_on_submit=True):
         c_n, c_c, c_b = st.columns([2, 2, 1])
         new_name = c_n.text_input("Staff Name")
