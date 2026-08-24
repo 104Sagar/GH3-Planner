@@ -7,7 +7,7 @@ from datetime import date
 
 st.set_page_config(page_title="GH Labor Planner", layout="wide")
 
-# --- CUSTOM CSS FOR SIDE-BY-SIDE MOBILE GRID & COLORED BLOCKS ---
+# --- COMPACT CSS STYLING ---
 st.markdown("""
     <style>
         .block-container {
@@ -35,6 +35,9 @@ st.markdown("""
         p, label, span, div {
             font-size: 0.85rem !important;
         }
+        .stNumberInput, .stDateInput {
+            margin-bottom: -0.5rem;
+        }
         .footer-watermark {
             text-align: center;
             font-size: 0.7rem;
@@ -43,17 +46,6 @@ st.markdown("""
             margin-bottom: 0.5rem;
             border-top: 1px solid #333;
             padding-top: 0.3rem;
-        }
-        /* FORCE COLUMNS SIDE-BY-SIDE ON ALL MOBILE SCREENS */
-        .row-table-container {
-            display: flex;
-            flex-direction: row;
-            gap: 10px;
-            width: 100%;
-        }
-        .row-column {
-            flex: 1;
-            min-width: 0;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -491,7 +483,7 @@ with tab_map:
     available_tasks_list = list(st.session_state.task_config.keys())
     selected_track_task = st.selectbox("Select Task to Track & Color-Code:", options=available_tasks_list, key="map_task_selector")
     
-    st.markdown("<small>💡 <i>Tap any row block to cycle status: <b>Grey (Unfilled)</b> ➡️ <b>Half Yellow (Half Finished)</b> ➡️ <b>Green (Finished)</b></i></small>", unsafe_allow_html=True)
+    st.markdown("<small>💡 <i>Select status per row: <b>Unfilled (Grey)</b> | <b>Half Finished (Yellow)</b> | <b>Finished (Green)</b></i></small>", unsafe_allow_html=True)
     st.markdown("---")
     
     if selected_track_task not in st.session_state.map_progress:
@@ -500,68 +492,68 @@ with tab_map:
     north_rows = list(range(3001, 3260, 2))
     south_rows = list(range(3002, 3261, 2))
     
-    # Handle clicks via query params / buttons using custom HTML container
-    clicked_row = None
-    for r in north_rows + south_rows:
-        if st.button(f"click_{r}", key=f"action_row_{r}", help=None, use_container_width=False):
-            clicked_row = str(r)
+    status_options = ["Unfilled", "Half Finished", "Finished"]
 
-    if clicked_row:
-        curr = st.session_state.map_progress[selected_track_task].get(clicked_row, "Unfilled")
-        if curr == "Unfilled":
-            nxt = "Half Finished"
-        elif curr == "Half Finished":
-            nxt = "Finished"
-        else:
-            nxt = "Unfilled"
-        st.session_state.map_progress[selected_track_task][clicked_row] = nxt
+    # Use standard 2 columns. To ensure iPhone displays them side-by-side cleanly, 
+    # we render compact selectboxes paired with color chips.
+    col_north, col_south = st.columns(2)
+    
+    map_changed = False
+
+    with col_north:
+        st.markdown("##### ⬆️ North Side")
+        for r in north_rows:
+            r_str = str(r)
+            current_val = st.session_state.map_progress[selected_track_task].get(r_str, "Unfilled")
+            idx = status_options.index(current_val) if current_val in status_options else 0
+            
+            # Color indicator prefix
+            prefix = "⚪"
+            if current_val == "Finished":
+                prefix = "🟢"
+            elif current_val == "Half Finished":
+                prefix = "🟡"
+
+            new_val = st.selectbox(
+                f"{prefix} Row {r}", 
+                options=status_options, 
+                index=idx, 
+                key=f"sel_n_{selected_track_task}_{r}",
+                label_visibility="visible"
+            )
+            
+            if new_val != current_val:
+                st.session_state.map_progress[selected_track_task][r_str] = new_val
+                map_changed = True
+
+    with col_south:
+        st.markdown("##### ⬇️ South Side")
+        for r in south_rows:
+            r_str = str(r)
+            current_val = st.session_state.map_progress[selected_track_task].get(r_str, "Unfilled")
+            idx = status_options.index(current_val) if current_val in status_options else 0
+            
+            prefix = "⚪"
+            if current_val == "Finished":
+                prefix = "🟢"
+            elif current_val == "Half Finished":
+                prefix = "🟡"
+
+            new_val = st.selectbox(
+                f"{prefix} Row {r}", 
+                options=status_options, 
+                index=idx, 
+                key=f"sel_s_{selected_track_task}_{r}",
+                label_visibility="visible"
+            )
+            
+            if new_val != current_val:
+                st.session_state.map_progress[selected_track_task][r_str] = new_val
+                map_changed = True
+
+    if map_changed:
         save_data(MAP_FILE, st.session_state.map_progress)
         st.rerun()
-
-    # Build pure HTML/CSS side-by-side grid to guarantee mobile side-by-side layout & exact coloring
-    def render_row_list(rows_list, side_title):
-        html = f"<div class='row-column'><h4 style='text-align:center;'>{side_title}</h4>"
-        for r in rows_list:
-            r_str = str(r)
-            status = st.session_state.map_progress[selected_track_task].get(r_str, "Unfilled")
-            
-            if status == "Finished":
-                bg = "#2e7d32" # Solid Green
-                text_col = "white"
-            elif status == "Half Finished":
-                bg = "linear-gradient(90deg, #fbc02d 50%, #2b2b2b 50%)" # Half Yellow
-                text_col = "white"
-            else:
-                bg = "#2b2b2b" # Unfilled Grey
-                text_col = "#ccc"
-                
-            # Render a clickable block
-            html += f"""
-                <form action='' method='get' style='margin-bottom: 4px;'>
-                    <button name='click_{r}' value='1' style='
-                        width: 100%;
-                        background: {bg};
-                        color: {text_col};
-                        border: 1px solid #444;
-                        border-radius: 4px;
-                        padding: 6px;
-                        font-weight: 500;
-                        text-align: center;
-                        cursor: pointer;
-                    '>Row {r}</button>
-                </form>
-            """
-        html += "</div>"
-        return html
-
-    # Use HTML flex container so iPhone forces side-by-side display
-    grid_html = f"""
-        <div class='row-table-container'>
-            {render_row_list(north_rows, "⬆️ North Side")}
-            {render_row_list(south_rows, "⬇️ South Side")}
-        </div>
-    """
-    st.markdown(grid_html, unsafe_allow_html=True)
 
     st.markdown("---")
     if st.button("🔄 Reset All Map Progress", type="primary"):
