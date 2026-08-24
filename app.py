@@ -89,11 +89,12 @@ def get_badge_html(name, cat):
 st.title("🌿 GH3 Labor Allocation & Roster Planner")
 
 with st.container():
-    c_set1, c_set2, c_set3, c_set4 = st.columns(4)
+    c_set1, c_set2, c_set3, c_set4, c_set5 = st.columns(5)
     week_date = c_set1.date_input("Week Of:", value=date.today())
     total_rows = c_set2.number_input("Total Rows", min_value=1, value=260)
     plants_per_row = c_set3.number_input("Plants per Row", min_value=1, value=480)
-    target_days = c_set4.number_input("Target Days to Finish", min_value=1.0, value=5.0, step=0.5)
+    target_days = c_set4.number_input("Target Days", min_value=1.0, value=5.0, step=0.5)
+    hours_per_day = c_set5.number_input("Hours / Day", min_value=1.0, value=7.35, step=0.05)
 
 total_plants = total_rows * plants_per_row
 st.markdown("---")
@@ -113,9 +114,9 @@ with tab_assign:
     task_requirements_display = {}
     for task, cfg in st.session_state.task_config.items():
         total_task_plants = total_plants * cfg["freq"]
-        avg_kpi = cfg["avg_kpi"]
-        man_days = total_task_plants / avg_kpi if avg_kpi > 0 else 0
-        req_staff = math.ceil(man_days / target_days)
+        daily_output_per_person = cfg["avg_kpi"] * hours_per_day
+        total_man_days = total_task_plants / daily_output_per_person if daily_output_per_person > 0 else 0
+        req_staff = math.ceil(total_man_days / target_days)
         task_requirements_display[task] = req_staff
 
     col_pool, col_tasks = st.columns([1.2, 2])
@@ -173,7 +174,7 @@ with tab_assign:
             category_map[cat].append({"name": name, "task": task})
 
     output_text = f"GH3 - WEEKLY LABOR ROSTER ({week_date.strftime('%d %b %Y')})\n"
-    output_text += f"Parameters: {total_rows} rows | {plants_per_row} plants/row | Target: {target_days} days\n"
+    output_text += f"Parameters: {total_rows} rows | {plants_per_row} plants/row | Target: {target_days} days ({hours_per_day} hrs/day)\n"
     output_text += "---------------------------------------------------\n\n"
 
     for cat in ["GG", "Leading Hand", "TOTC", "Urson"]:
@@ -191,7 +192,7 @@ with tab_assign:
 # ==========================================
 with tab_calc:
     st.subheader("📊 Staff Requirement Breakdown (Average KPI vs. Target KPI)")
-    st.markdown(f"Calculated based on **{total_rows} rows**, **{plants_per_row} plants/row** (**{total_plants:,} total plants**), and a target of **{target_days} days**.")
+    st.markdown(f"Calculated based on **{total_rows} rows**, **{plants_per_row} plants/row** (**{total_plants:,} total plants**), **{hours_per_day} hrs/day**, and a target of **{target_days} days**.")
     st.markdown("---")
     
     col_h1, col_h2, col_h3, col_h4, col_h5 = st.columns([1.5, 1, 1, 1, 1])
@@ -210,16 +211,15 @@ with tab_calc:
         
         total_task_plants = total_plants * freq
         
-        # Corrected calculation dividing by target_days
         avg_kpi = cfg["avg_kpi"]
-        avg_man_days = total_task_plants / avg_kpi if avg_kpi > 0 else 0
-        avg_req_staff = math.ceil(avg_man_days / target_days)
-        c3.markdown(f"**{avg_req_staff} staff**<br><small style='color:gray;'>({avg_kpi} KPI)</small>", unsafe_allow_html=True)
+        avg_daily_output = avg_kpi * hours_per_day
+        avg_req_staff = math.ceil((total_task_plants / avg_daily_output) / target_days) if avg_daily_output > 0 else 0
+        c3.markdown(f"**{avg_req_staff} staff**<br><small style='color:gray;'>({avg_kpi}/hr)</small>", unsafe_allow_html=True)
         
         target_kpi = cfg["target_kpi"]
-        target_man_days = total_task_plants / target_kpi if target_kpi > 0 else 0
-        target_req_staff = math.ceil(target_man_days / target_days)
-        c4.markdown(f"**{target_req_staff} staff**<br><small style='color:gray;'>({target_kpi} KPI)</small>", unsafe_allow_html=True)
+        target_daily_output = target_kpi * hours_per_day
+        target_req_staff = math.ceil((total_task_plants / target_daily_output) / target_days) if target_daily_output > 0 else 0
+        c4.markdown(f"**{target_req_staff} staff**<br><small style='color:gray;'>({target_kpi}/hr)</small>", unsafe_allow_html=True)
         
         diff = avg_req_staff - target_req_staff
         if diff > 0:
@@ -228,7 +228,8 @@ with tab_calc:
             c5.markdown(f"<span style='color: green;'>{diff} staff (Target met)</span>", unsafe_allow_html=True)
         else:
             c5.markdown("`Exact Match`", unsafe_allow_html=True)
-            st.markdown("---")
+            
+        st.markdown("---")
 
 # ==========================================
 # TAB 3: MANAGE STAFF
