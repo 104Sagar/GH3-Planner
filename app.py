@@ -32,6 +32,7 @@ st.markdown("""
 STAFF_FILE = "staff_data.json"
 TASK_FILE = "task_data.json"
 ASSIGNMENT_FILE = "assignment_data.json"
+PARAMS_FILE = "params_data.json"
 
 DEFAULT_STAFF = [
     {"name": "Marie", "category": "GG"}, {"name": "Kid", "category": "GG"}, {"name": "Ting", "category": "GG"}, {"name": "Tommy", "category": "GG"}, {"name": "Risa", "category": "GG"},
@@ -48,6 +49,14 @@ DEFAULT_TASKS = {
     "Pruning": {"target_kpi": 1200, "avg_kpi": 900, "freq": 1, "active": True, "is_manual": False, "deletable": False},
     "Lowering": {"target_kpi": 1333, "avg_kpi": 1400, "freq": 1, "active": True, "is_manual": False, "deletable": False},
     "Others": {"target_kpi": 0, "avg_kpi": 0, "freq": 1, "active": True, "is_manual": True, "manual_req": 2, "deletable": False},
+}
+
+DEFAULT_PARAMS = {
+    "week_date": date.today().isoformat(),
+    "total_rows": 260,
+    "plants_per_row": 480,
+    "target_days": 5.0,
+    "hours_per_day": 7.35
 }
 
 def load_data(filename, default_val):
@@ -74,13 +83,7 @@ if "assignments" not in st.session_state:
     st.session_state.assignments = load_data(ASSIGNMENT_FILE, default_assignments)
 
 if "global_params" not in st.session_state:
-    st.session_state.global_params = {
-        "week_date": date.today().isoformat(),
-        "total_rows": 260,
-        "plants_per_row": 480,
-        "target_days": 5.0,
-        "hours_per_day": 7.35
-    }
+    st.session_state.global_params = load_data(PARAMS_FILE, DEFAULT_PARAMS)
 
 def get_category_color(cat):
     colors = {
@@ -269,13 +272,36 @@ with tab_calc:
     
     c_set1, c_set2, c_set3, c_set4, c_set5 = st.columns(5)
     parsed_date = date.fromisoformat(gp["week_date"]) if isinstance(gp["week_date"], str) else gp["week_date"]
-    new_week_date = c_set1.date_input("Week:", value=parsed_date)
-    gp["week_date"] = new_week_date.isoformat()
     
-    gp["total_rows"] = c_set2.number_input("Rows", min_value=1, value=gp["total_rows"])
-    gp["plants_per_row"] = c_set3.number_input("Pl/Row", min_value=1, value=gp["plants_per_row"])
-    gp["target_days"] = c_set4.number_input("Days", min_value=1.0, value=gp["target_days"], step=0.5)
-    gp["hours_per_day"] = c_set5.number_input("Hrs/Day", min_value=1.0, value=gp["hours_per_day"], step=0.05)
+    params_changed = False
+    
+    new_week_date = c_set1.date_input("Week:", value=parsed_date, key="input_week_date")
+    if gp["week_date"] != new_week_date.isoformat():
+        gp["week_date"] = new_week_date.isoformat()
+        params_changed = True
+    
+    new_rows = c_set2.number_input("Rows", min_value=1, value=int(gp["total_rows"]), key="input_total_rows")
+    if gp["total_rows"] != new_rows:
+        gp["total_rows"] = new_rows
+        params_changed = True
+
+    new_plr = c_set3.number_input("Pl/Row", min_value=1, value=int(gp["plants_per_row"]), key="input_plants_per_row")
+    if gp["plants_per_row"] != new_plr:
+        gp["plants_per_row"] = new_plr
+        params_changed = True
+
+    new_days = c_set4.number_input("Days", min_value=1.0, value=float(gp["target_days"]), step=0.5, key="input_target_days")
+    if gp["target_days"] != new_days:
+        gp["target_days"] = new_days
+        params_changed = True
+
+    new_hrs = c_set5.number_input("Hrs/Day", min_value=1.0, value=float(gp["hours_per_day"]), step=0.05, key="input_hours_per_day")
+    if gp["hours_per_day"] != new_hrs:
+        gp["hours_per_day"] = new_hrs
+        params_changed = True
+
+    if params_changed:
+        save_data(PARAMS_FILE, gp)
 
     st.markdown("---")
     st.subheader("📊 Calculator, KPIs & Tasks")
